@@ -1,4 +1,4 @@
-# OpenMLS
+# OpenMLS for Keychat
 
 [![OpenMLS Chat][chat-image]][chat-link]
 [![OpenMLS List][list-image]][list-link]
