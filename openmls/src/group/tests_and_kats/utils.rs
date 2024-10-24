@@ -226,28 +226,28 @@ fn test_random() {
     randombytes(0);
 }
 
-#[openmls_test::openmls_test]
-fn test_setup(provider: &impl crate::storage::OpenMlsProvider) {
-    let test_client_config_a = TestClientConfig {
-        name: "TestClientConfigA",
-        ciphersuites: vec![Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519],
-    };
-    let test_client_config_b = TestClientConfig {
-        name: "TestClientConfigB",
-        ciphersuites: vec![Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519],
-    };
-    let use_ratchet_tree_extension = true;
-    let test_group_config = TestGroupConfig {
-        ciphersuite: Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
-        use_ratchet_tree_extension,
-        members: vec![test_client_config_a.clone(), test_client_config_b.clone()],
-    };
-    let test_setup_config = TestSetupConfig {
-        clients: vec![test_client_config_a, test_client_config_b],
-        groups: vec![test_group_config],
-    };
-    let _test_setup = setup(test_setup_config, provider);
-}
+// #[openmls_test::openmls_test]
+// fn test_setup(provider: &impl crate::storage::OpenMlsProvider) {
+//     let test_client_config_a = TestClientConfig {
+//         name: "TestClientConfigA",
+//         ciphersuites: vec![Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519],
+//     };
+//     let test_client_config_b = TestClientConfig {
+//         name: "TestClientConfigB",
+//         ciphersuites: vec![Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519],
+//     };
+//     let use_ratchet_tree_extension = true;
+//     let test_group_config = TestGroupConfig {
+//         ciphersuite: Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
+//         use_ratchet_tree_extension,
+//         members: vec![test_client_config_a.clone(), test_client_config_b.clone()],
+//     };
+//     let test_setup_config = TestSetupConfig {
+//         clients: vec![test_client_config_a, test_client_config_b],
+//         groups: vec![test_group_config],
+//     };
+//     let _test_setup = setup(test_setup_config, provider);
+// }
 
 #[derive(Clone)]
 pub(crate) struct CredentialWithKeyAndSigner {

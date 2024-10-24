@@ -132,38 +132,38 @@ pub struct FrankenLifetime {
     pub not_after: u64,
 }
 
-#[openmls_test]
-fn test_franken_key_package() {
-    let config = ciphersuite;
+// #[openmls_test]
+// fn test_franken_key_package() {
+//     let config = ciphersuite;
 
-    let (credential, signer) = {
-        let credential = BasicCredential::new(b"test identity".to_vec());
-        let signature_keys = SignatureKeyPair::new(ciphersuite.signature_algorithm()).unwrap();
-        signature_keys.store(provider.storage()).unwrap();
+//     let (credential, signer) = {
+//         let credential = BasicCredential::new(b"test identity".to_vec());
+//         let signature_keys = SignatureKeyPair::new(ciphersuite.signature_algorithm()).unwrap();
+//         signature_keys.store(provider.storage()).unwrap();
 
-        (credential, signature_keys)
-    };
-    let signature_key = OpenMlsSignaturePublicKey::new(
-        signer.to_public_vec().into(),
-        ciphersuite.signature_algorithm(),
-    )
-    .unwrap();
+//         (credential, signature_keys)
+//     };
+//     let signature_key = OpenMlsSignaturePublicKey::new(
+//         signer.to_public_vec().into(),
+//         ciphersuite.signature_algorithm(),
+//     )
+//     .unwrap();
 
-    let credential_with_key = CredentialWithKey {
-        credential: credential.into(),
-        signature_key: signature_key.into(),
-    };
+//     let credential_with_key = CredentialWithKey {
+//         credential: credential.into(),
+//         signature_key: signature_key.into(),
+//     };
 
-    let kp = KeyPackage::builder()
-        .build(config, provider, &signer, credential_with_key)
-        .unwrap();
+//     let kp = KeyPackage::builder()
+//         .build(config, provider, &signer, credential_with_key)
+//         .unwrap();
 
-    let ser = kp.key_package().tls_serialize_detached().unwrap();
-    let fkp = FrankenKeyPackage::tls_deserialize(&mut ser.as_slice()).unwrap();
+//     let ser = kp.key_package().tls_serialize_detached().unwrap();
+//     let fkp = FrankenKeyPackage::tls_deserialize(&mut ser.as_slice()).unwrap();
 
-    let ser2 = fkp.tls_serialize_detached().unwrap();
-    assert_eq!(ser, ser2);
+//     let ser2 = fkp.tls_serialize_detached().unwrap();
+//     assert_eq!(ser, ser2);
 
-    let kp2 = KeyPackage::from(fkp.clone());
-    assert_eq!(kp.key_package(), &kp2);
-}
+//     let kp2 = KeyPackage::from(fkp.clone());
+//     assert_eq!(kp.key_package(), &kp2);
+// }

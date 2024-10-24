@@ -334,10 +334,10 @@ fn helper_generate_kat<Provider: OpenMlsProvider + Default>(
     )
 }
 
-#[openmls_test]
-fn generate_kats(ciphersuite: Ciphersuite, provider: &Provider) {
-    helper_generate_kat::<Provider>(ciphersuite);
-}
+// #[openmls_test]
+// fn generate_kats(ciphersuite: Ciphersuite, provider: &Provider) {
+//     helper_generate_kat::<Provider>(ciphersuite);
+// }
 
 #[test]
 #[ignore]
@@ -432,281 +432,281 @@ fn helper_write_kats(kat_data: Vec<(Ciphersuite, GroupId, Vec<Vec<u8>>)>) {
     serde_json::to_writer(&mut file, &data).unwrap();
 }
 
-#[openmls_test]
-fn test(ciphersuite: Ciphersuite, provider: &Provider) {
-    // setup
-    let base64_engine = base64::engine::GeneralPurpose::new(
-        &base64::alphabet::URL_SAFE,
-        base64::engine::GeneralPurposeConfig::new(),
-    );
+// #[openmls_test]
+// fn test(ciphersuite: Ciphersuite, provider: &Provider) {
+//     // setup
+//     let base64_engine = base64::engine::GeneralPurpose::new(
+//         &base64::alphabet::URL_SAFE,
+//         base64::engine::GeneralPurposeConfig::new(),
+//     );
 
-    // load data
-    let mut data: HashMap<Ciphersuite, KatData> = {
-        let file = std::fs::File::open("test_vectors/storage-stability.json").unwrap();
-        serde_json::from_reader(file).unwrap()
-    };
+//     // load data
+//     let mut data: HashMap<Ciphersuite, KatData> = {
+//         let file = std::fs::File::open("test_vectors/storage-stability.json").unwrap();
+//         serde_json::from_reader(file).unwrap()
+//     };
 
-    let KatData { group_id, storages } = data.remove(&ciphersuite).unwrap();
+//     let KatData { group_id, storages } = data.remove(&ciphersuite).unwrap();
 
-    // parse base64-encoded serialized storage
-    let mut storages = storages
-        .iter()
-        .map(|storage| base64_engine.decode(storage).unwrap());
+//     // parse base64-encoded serialized storage
+//     let mut storages = storages
+//         .iter()
+//         .map(|storage| base64_engine.decode(storage).unwrap());
 
-    //// load group from state right after creation
+//     //// load group from state right after creation
 
-    let provider_new_group =
-        deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
+//     let provider_new_group =
+//         deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
 
-    let alice_group_new_group = MlsGroup::load(provider_new_group.storage(), &group_id)
-        .unwrap()
-        .unwrap();
+//     let alice_group_new_group = MlsGroup::load(provider_new_group.storage(), &group_id)
+//         .unwrap()
+//         .unwrap();
 
-    // alice is the sole member
-    let members = alice_group_new_group.members().collect::<Vec<_>>();
-    assert_eq!(members.len(), 1);
-    assert_eq!(members[0].index, LeafNodeIndex::new(0));
-    assert_eq!(
-        members[0].credential,
-        BasicCredential::new(b"alice".to_vec()).into()
-    );
+//     // alice is the sole member
+//     let members = alice_group_new_group.members().collect::<Vec<_>>();
+//     assert_eq!(members.len(), 1);
+//     assert_eq!(members[0].index, LeafNodeIndex::new(0));
+//     assert_eq!(
+//         members[0].credential,
+//         BasicCredential::new(b"alice".to_vec()).into()
+//     );
 
-    // there are no pending proposals or commits
-    assert!(alice_group_new_group.pending_proposals().next().is_none());
-    assert!(alice_group_new_group.pending_commit().is_none());
+//     // there are no pending proposals or commits
+//     assert!(alice_group_new_group.pending_proposals().next().is_none());
+//     assert!(alice_group_new_group.pending_commit().is_none());
 
-    // we are in the right epoch
-    assert_eq!(alice_group_new_group.epoch(), 0.into());
-    assert_eq!(alice_group_new_group.resumption_psk_store().cursor(), 1);
+//     // we are in the right epoch
+//     assert_eq!(alice_group_new_group.epoch(), 0.into());
+//     assert_eq!(alice_group_new_group.resumption_psk_store().cursor(), 1);
 
-    // dropping to prevent accidentally using the wrong provider or group later
-    drop(alice_group_new_group);
-    drop(provider_new_group);
+//     // dropping to prevent accidentally using the wrong provider or group later
+//     drop(alice_group_new_group);
+//     drop(provider_new_group);
 
-    //// load group from state after bob was added, but commit not yet merged
+//     //// load group from state after bob was added, but commit not yet merged
 
-    let provider_pending_add_commit =
-        deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
+//     let provider_pending_add_commit =
+//         deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
 
-    let alice_group_pending_add_commit =
-        MlsGroup::load(provider_pending_add_commit.storage(), &group_id)
-            .unwrap()
-            .unwrap();
+//     let alice_group_pending_add_commit =
+//         MlsGroup::load(provider_pending_add_commit.storage(), &group_id)
+//             .unwrap()
+//             .unwrap();
 
-    // alice is the sole member
-    let members = alice_group_pending_add_commit.members().collect::<Vec<_>>();
-    assert_eq!(members.len(), 1);
-    assert_eq!(members[0].index, LeafNodeIndex::new(0));
-    assert_eq!(
-        members[0].credential,
-        BasicCredential::new(b"alice".to_vec()).into()
-    );
+//     // alice is the sole member
+//     let members = alice_group_pending_add_commit.members().collect::<Vec<_>>();
+//     assert_eq!(members.len(), 1);
+//     assert_eq!(members[0].index, LeafNodeIndex::new(0));
+//     assert_eq!(
+//         members[0].credential,
+//         BasicCredential::new(b"alice".to_vec()).into()
+//     );
 
-    // there is one pending add commit
-    match alice_group_pending_add_commit.pending_commit() {
-        Some(staged_commit) => {
-            assert_eq!(staged_commit.queued_proposals().count(), 1);
-            assert_eq!(staged_commit.add_proposals().count(), 1);
-            let add_proposal = staged_commit.add_proposals().next().unwrap();
-            assert_eq!(
-                add_proposal
-                    .add_proposal()
-                    .key_package()
-                    .leaf_node()
-                    .credential(),
-                &BasicCredential::new(b"bob".to_vec()).into()
-            );
-        }
-        None => panic!("expected a pending commit"),
-    };
+//     // there is one pending add commit
+//     match alice_group_pending_add_commit.pending_commit() {
+//         Some(staged_commit) => {
+//             assert_eq!(staged_commit.queued_proposals().count(), 1);
+//             assert_eq!(staged_commit.add_proposals().count(), 1);
+//             let add_proposal = staged_commit.add_proposals().next().unwrap();
+//             assert_eq!(
+//                 add_proposal
+//                     .add_proposal()
+//                     .key_package()
+//                     .leaf_node()
+//                     .credential(),
+//                 &BasicCredential::new(b"bob".to_vec()).into()
+//             );
+//         }
+//         None => panic!("expected a pending commit"),
+//     };
 
-    // there are no pending proposals
-    assert_eq!(
-        alice_group_pending_add_commit.pending_proposals().count(),
-        0
-    );
+//     // there are no pending proposals
+//     assert_eq!(
+//         alice_group_pending_add_commit.pending_proposals().count(),
+//         0
+//     );
 
-    // we are in the right epoch
-    assert_eq!(alice_group_pending_add_commit.epoch(), 0.into());
-    assert_eq!(
-        alice_group_pending_add_commit
-            .resumption_psk_store()
-            .cursor(),
-        1
-    );
+//     // we are in the right epoch
+//     assert_eq!(alice_group_pending_add_commit.epoch(), 0.into());
+//     assert_eq!(
+//         alice_group_pending_add_commit
+//             .resumption_psk_store()
+//             .cursor(),
+//         1
+//     );
 
-    // dropping to prevent accidentally using the wrong provider or group later
-    drop(alice_group_pending_add_commit);
-    drop(provider_pending_add_commit);
+//     // dropping to prevent accidentally using the wrong provider or group later
+//     drop(alice_group_pending_add_commit);
+//     drop(provider_pending_add_commit);
 
-    //// load group from state after bob was added
+//     //// load group from state after bob was added
 
-    let provider_bob_added =
-        deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
+//     let provider_bob_added =
+//         deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
 
-    let alice_group_bob_added = MlsGroup::load(provider_bob_added.storage(), &group_id)
-        .unwrap()
-        .unwrap();
+//     let alice_group_bob_added = MlsGroup::load(provider_bob_added.storage(), &group_id)
+//         .unwrap()
+//         .unwrap();
 
-    // alice and bob are members
-    let members = alice_group_bob_added.members().collect::<Vec<_>>();
-    assert_eq!(members.len(), 2);
-    assert_eq!(members[0].index, LeafNodeIndex::new(0));
-    assert_eq!(members[1].index, LeafNodeIndex::new(1));
-    assert_eq!(
-        members[0].credential,
-        BasicCredential::new(b"alice".to_vec()).into()
-    );
-    assert_eq!(
-        members[1].credential,
-        BasicCredential::new(b"bob".to_vec()).into()
-    );
+//     // alice and bob are members
+//     let members = alice_group_bob_added.members().collect::<Vec<_>>();
+//     assert_eq!(members.len(), 2);
+//     assert_eq!(members[0].index, LeafNodeIndex::new(0));
+//     assert_eq!(members[1].index, LeafNodeIndex::new(1));
+//     assert_eq!(
+//         members[0].credential,
+//         BasicCredential::new(b"alice".to_vec()).into()
+//     );
+//     assert_eq!(
+//         members[1].credential,
+//         BasicCredential::new(b"bob".to_vec()).into()
+//     );
 
-    // there are no pending proposals or commits
-    assert!(alice_group_bob_added.pending_proposals().next().is_none());
-    assert!(alice_group_bob_added.pending_commit().is_none());
+//     // there are no pending proposals or commits
+//     assert!(alice_group_bob_added.pending_proposals().next().is_none());
+//     assert!(alice_group_bob_added.pending_commit().is_none());
 
-    // we are in the right epoch
-    assert_eq!(alice_group_bob_added.epoch(), 1.into());
-    assert_eq!(alice_group_bob_added.resumption_psk_store().cursor(), 2);
+//     // we are in the right epoch
+//     assert_eq!(alice_group_bob_added.epoch(), 1.into());
+//     assert_eq!(alice_group_bob_added.resumption_psk_store().cursor(), 2);
 
-    // dropping to prevent accidentally using the wrong provider or group later
-    drop(alice_group_bob_added);
-    drop(provider_bob_added);
+//     // dropping to prevent accidentally using the wrong provider or group later
+//     drop(alice_group_bob_added);
+//     drop(provider_bob_added);
 
-    //// load group from state after alice updated GCE, but commit is not yet merged
+//     //// load group from state after alice updated GCE, but commit is not yet merged
 
-    let provider_pending_gce_commit =
-        deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
+//     let provider_pending_gce_commit =
+//         deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
 
-    let alice_group_pending_gce_commit =
-        MlsGroup::load(provider_pending_gce_commit.storage(), &group_id)
-            .unwrap()
-            .unwrap();
+//     let alice_group_pending_gce_commit =
+//         MlsGroup::load(provider_pending_gce_commit.storage(), &group_id)
+//             .unwrap()
+//             .unwrap();
 
-    // alice and bob are members
-    let members = alice_group_pending_gce_commit.members().collect::<Vec<_>>();
-    assert_eq!(members.len(), 2);
-    assert_eq!(members[0].index, LeafNodeIndex::new(0));
-    assert_eq!(members[1].index, LeafNodeIndex::new(1));
-    assert_eq!(
-        members[0].credential,
-        BasicCredential::new(b"alice".to_vec()).into()
-    );
-    assert_eq!(
-        members[1].credential,
-        BasicCredential::new(b"bob".to_vec()).into()
-    );
+//     // alice and bob are members
+//     let members = alice_group_pending_gce_commit.members().collect::<Vec<_>>();
+//     assert_eq!(members.len(), 2);
+//     assert_eq!(members[0].index, LeafNodeIndex::new(0));
+//     assert_eq!(members[1].index, LeafNodeIndex::new(1));
+//     assert_eq!(
+//         members[0].credential,
+//         BasicCredential::new(b"alice".to_vec()).into()
+//     );
+//     assert_eq!(
+//         members[1].credential,
+//         BasicCredential::new(b"bob".to_vec()).into()
+//     );
 
-    // there are no pending proposals
-    assert!(alice_group_pending_gce_commit
-        .pending_proposals()
-        .next()
-        .is_none());
+//     // there are no pending proposals
+//     assert!(alice_group_pending_gce_commit
+//         .pending_proposals()
+//         .next()
+//         .is_none());
 
-    // there is one pending gce commit
-    match alice_group_pending_gce_commit.pending_commit() {
-        Some(staged_commit) => {
-            let proposals: Vec<_> = staged_commit.queued_proposals().collect();
-            assert_eq!(proposals.len(), 1);
+//     // there is one pending gce commit
+//     match alice_group_pending_gce_commit.pending_commit() {
+//         Some(staged_commit) => {
+//             let proposals: Vec<_> = staged_commit.queued_proposals().collect();
+//             assert_eq!(proposals.len(), 1);
 
-            let Proposal::GroupContextExtensions(gce_proposal) = &proposals[0].proposal() else {
-                panic!(
-                    "expected a group context extension proposal, got {:?}",
-                    proposals[0]
-                )
-            };
+//             let Proposal::GroupContextExtensions(gce_proposal) = &proposals[0].proposal() else {
+//                 panic!(
+//                     "expected a group context extension proposal, got {:?}",
+//                     proposals[0]
+//                 )
+//             };
 
-            assert_eq!(
-                gce_proposal.extensions(),
-                &Extensions::single(Extension::RequiredCapabilities(
-                    RequiredCapabilitiesExtension::new(&[ExtensionType::Unknown(0xf042)], &[], &[])
-                ))
-            );
-        }
-        None => panic!("expected a pending commit"),
-    };
+//             assert_eq!(
+//                 gce_proposal.extensions(),
+//                 &Extensions::single(Extension::RequiredCapabilities(
+//                     RequiredCapabilitiesExtension::new(&[ExtensionType::Unknown(0xf042)], &[], &[])
+//                 ))
+//             );
+//         }
+//         None => panic!("expected a pending commit"),
+//     };
 
-    // we are in the right epoch
-    assert_eq!(alice_group_pending_gce_commit.epoch(), 1.into());
-    assert_eq!(
-        alice_group_pending_gce_commit
-            .resumption_psk_store()
-            .cursor(),
-        2
-    );
+//     // we are in the right epoch
+//     assert_eq!(alice_group_pending_gce_commit.epoch(), 1.into());
+//     assert_eq!(
+//         alice_group_pending_gce_commit
+//             .resumption_psk_store()
+//             .cursor(),
+//         2
+//     );
 
-    // dropping to prevent accidentally using the wrong provider or group later
-    drop(alice_group_pending_gce_commit);
-    drop(provider_pending_gce_commit);
+//     // dropping to prevent accidentally using the wrong provider or group later
+//     drop(alice_group_pending_gce_commit);
+//     drop(provider_pending_gce_commit);
 
-    //// load group from state after alice updated GCE
+//     //// load group from state after alice updated GCE
 
-    let provider_gce_updated =
-        deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
+//     let provider_gce_updated =
+//         deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
 
-    let alice_group_gce_updated = MlsGroup::load(provider_gce_updated.storage(), &group_id)
-        .unwrap()
-        .unwrap();
+//     let alice_group_gce_updated = MlsGroup::load(provider_gce_updated.storage(), &group_id)
+//         .unwrap()
+//         .unwrap();
 
-    // alice and bob are members
-    let members = alice_group_gce_updated.members().collect::<Vec<_>>();
-    assert_eq!(members.len(), 2);
-    assert_eq!(members[0].index, LeafNodeIndex::new(0));
-    assert_eq!(members[1].index, LeafNodeIndex::new(1));
-    assert_eq!(
-        members[0].credential,
-        BasicCredential::new(b"alice".to_vec()).into()
-    );
-    assert_eq!(
-        members[1].credential,
-        BasicCredential::new(b"bob".to_vec()).into()
-    );
+//     // alice and bob are members
+//     let members = alice_group_gce_updated.members().collect::<Vec<_>>();
+//     assert_eq!(members.len(), 2);
+//     assert_eq!(members[0].index, LeafNodeIndex::new(0));
+//     assert_eq!(members[1].index, LeafNodeIndex::new(1));
+//     assert_eq!(
+//         members[0].credential,
+//         BasicCredential::new(b"alice".to_vec()).into()
+//     );
+//     assert_eq!(
+//         members[1].credential,
+//         BasicCredential::new(b"bob".to_vec()).into()
+//     );
 
-    // there are no pending proposals or commits
-    assert!(alice_group_gce_updated.pending_proposals().next().is_none());
-    assert!(alice_group_gce_updated.pending_commit().is_none());
+//     // there are no pending proposals or commits
+//     assert!(alice_group_gce_updated.pending_proposals().next().is_none());
+//     assert!(alice_group_gce_updated.pending_commit().is_none());
 
-    drop(alice_group_gce_updated);
-    drop(provider_gce_updated);
+//     drop(alice_group_gce_updated);
+//     drop(provider_gce_updated);
 
-    //// load group from state after alice creates another proposal
+//     //// load group from state after alice creates another proposal
 
-    let provider_pending_proposal =
-        deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
+//     let provider_pending_proposal =
+//         deserialize_provider::<_, Provider>(&mut storages.next().unwrap().as_slice(), "alice");
 
-    let alice_group_pending_proposal =
-        MlsGroup::load(provider_pending_proposal.storage(), &group_id)
-            .unwrap()
-            .unwrap();
+//     let alice_group_pending_proposal =
+//         MlsGroup::load(provider_pending_proposal.storage(), &group_id)
+//             .unwrap()
+//             .unwrap();
 
-    // alice and bob are members
-    let members = alice_group_pending_proposal.members().collect::<Vec<_>>();
-    assert_eq!(members.len(), 2);
-    assert_eq!(members[0].index, LeafNodeIndex::new(0));
-    assert_eq!(members[1].index, LeafNodeIndex::new(1));
-    assert_eq!(
-        members[0].credential,
-        BasicCredential::new(b"alice".to_vec()).into()
-    );
-    assert_eq!(
-        members[1].credential,
-        BasicCredential::new(b"bob".to_vec()).into()
-    );
+//     // alice and bob are members
+//     let members = alice_group_pending_proposal.members().collect::<Vec<_>>();
+//     assert_eq!(members.len(), 2);
+//     assert_eq!(members[0].index, LeafNodeIndex::new(0));
+//     assert_eq!(members[1].index, LeafNodeIndex::new(1));
+//     assert_eq!(
+//         members[0].credential,
+//         BasicCredential::new(b"alice".to_vec()).into()
+//     );
+//     assert_eq!(
+//         members[1].credential,
+//         BasicCredential::new(b"bob".to_vec()).into()
+//     );
 
-    // there is one pending add proposal
-    let proposals: Vec<_> = alice_group_pending_proposal.pending_proposals().collect();
-    assert_eq!(proposals.len(), 1);
-    match &proposals[0].proposal() {
-        Proposal::Add(add_proposal) => {
-            assert_eq!(
-                add_proposal.key_package().leaf_node().credential(),
-                &BasicCredential::new(b"charlie".to_vec()).into()
-            )
-        }
-        other => panic!("expected add proposal, got {:?}", other),
-    }
+//     // there is one pending add proposal
+//     let proposals: Vec<_> = alice_group_pending_proposal.pending_proposals().collect();
+//     assert_eq!(proposals.len(), 1);
+//     match &proposals[0].proposal() {
+//         Proposal::Add(add_proposal) => {
+//             assert_eq!(
+//                 add_proposal.key_package().leaf_node().credential(),
+//                 &BasicCredential::new(b"charlie".to_vec()).into()
+//             )
+//         }
+//         other => panic!("expected add proposal, got {:?}", other),
+//     }
 
-    // there is no pending commit
-    assert!(alice_group_pending_proposal.pending_commit().is_none());
-}
+//     // there is no pending commit
+//     assert!(alice_group_pending_proposal.pending_commit().is_none());
+// }

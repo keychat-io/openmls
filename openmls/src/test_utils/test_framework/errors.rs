@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 use crate::{error::LibraryError, group::errors::*};
-use openmls_rust_crypto::MemoryStorage;
+use openmls_rust_crypto::SqliteStorage;
 
 /// Setup error
 #[derive(Error, Debug, PartialEq)]

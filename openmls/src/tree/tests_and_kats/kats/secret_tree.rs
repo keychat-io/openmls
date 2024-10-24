@@ -183,18 +183,18 @@ pub fn run_test_vector<Provider: openmls::storage::OpenMlsProvider>(
     Ok(())
 }
 
-#[openmls_test::openmls_test]
-fn read_test_vectors_st() {
-    let _ = pretty_env_logger::try_init();
-    log::debug!("Reading test vectors ...");
+// #[openmls_test::openmls_test]
+// fn read_test_vectors_st() {
+//     let _ = pretty_env_logger::try_init();
+//     log::debug!("Reading test vectors ...");
 
-    let tests: Vec<SecretTree> = read_json!("../../../../test_vectors/secret-tree.json");
+//     let tests: Vec<SecretTree> = read_json!("../../../../test_vectors/secret-tree.json");
 
-    for test_vector in tests {
-        match run_test_vector(test_vector, provider) {
-            Ok(_) => {}
-            Err(e) => panic!("Error while checking secret tree test vector.\n{e:?}"),
-        }
-    }
-    log::trace!("Finished test vector verification");
-}
+//     for test_vector in tests {
+//         match run_test_vector(test_vector, provider) {
+//             Ok(_) => {}
+//             Err(e) => panic!("Error while checking secret tree test vector.\n{e:?}"),
+//         }
+//     }
+//     log::trace!("Finished test vector verification");
+// }

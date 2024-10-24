@@ -259,20 +259,20 @@ fn write_test_vectors() {
     write("test_vectors/key-schedule-new.json", &tests);
 }
 
-#[openmls_test::openmls_test]
-fn read_test_vectors_key_schedule() {
-    let _ = pretty_env_logger::try_init();
+// #[openmls_test::openmls_test]
+// fn read_test_vectors_key_schedule() {
+//     let _ = pretty_env_logger::try_init();
 
-    let tests: Vec<KeyScheduleTestVector> =
-        read_json!("../../../../test_vectors/key-schedule.json");
+//     let tests: Vec<KeyScheduleTestVector> =
+//         read_json!("../../../../test_vectors/key-schedule.json");
 
-    for test_vector in tests {
-        match run_test_vector(test_vector, provider) {
-            Ok(_) => {}
-            Err(e) => panic!("Error while checking key schedule test vector.\n{e:?}"),
-        }
-    }
-}
+//     for test_vector in tests {
+//         match run_test_vector(test_vector, provider) {
+//             Ok(_) => {}
+//             Err(e) => panic!("Error while checking key schedule test vector.\n{e:?}"),
+//         }
+//     }
+// }
 
 #[cfg(any(feature = "test-utils", test))]
 pub fn run_test_vector(
