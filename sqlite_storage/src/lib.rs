@@ -164,8 +164,7 @@ impl SqliteStorage {
             mp.send(r).expect("falied to send result for insert.");
         });
         mc.recv()
-            .unwrap()
-            .expect("falied to receive result for insert.");
+            .map_err(|e| format!("falied to receive result for insert {}", e))?;
 
         Ok(())
     }
@@ -187,8 +186,7 @@ impl SqliteStorage {
             mp.send(r).expect("falied to send result for delete.");
         });
         mc.recv()
-            .unwrap()
-            .expect("falied to receive result for delete.");
+            .map_err(|e| format!("falied to receive result for delete {}", e))?;
 
         Ok(())
     }
@@ -209,10 +207,11 @@ impl SqliteStorage {
             let r = sql.fetch_optional(&db).await;
             mp.send(r).expect("falied to send result for get value.");
         });
+
         let value = mc
             .recv()
-            .unwrap()
-            .expect("falied to receive result for get value.");
+            .map_err(|e| format!("falied to receive result for get value {}", e))?
+            .map_err(|e| format!("falied to get value from sql {}", e))?;
 
         if value.is_none() {
             return Ok(None);
@@ -1093,12 +1092,20 @@ impl StorageProvider<CURRENT_VERSION> for SqliteStorage {
         for proposal_ref in proposal_refs {
             // Delete all proposals.
             let key = serde_json::to_vec(&(group_id, proposal_ref))?;
-            self.del_value(&key).unwrap()
+            self.del_value(&key).map_err(|_| {
+                SqliteStorageError::InvalidArgument(
+                    "Failed to del value for clear_proposal_queue of proposal_ref".to_string(),
+                )
+            })?;
         }
 
         // Delete the proposal refs from the store.
         let key = build_key::<CURRENT_VERSION, &GroupId>(PROPOSAL_QUEUE_REFS_LABEL, group_id);
-        self.del_value(&key).unwrap();
+        self.del_value(&key).map_err(|_| {
+            SqliteStorageError::InvalidArgument(
+                "Failed to del value for clear_proposal_queue".to_string(),
+            )
+        })?;
 
         Ok(())
     }
