@@ -4,7 +4,7 @@
 //! OpenMLS.
 
 use openmls_rust_crypto::{RustCrypto, SqliteStorage};
-use openmls_sqlite_storage::LitePool;
+use openmls_sqlite_storage::MLSLitePool;
 use openmls_traits::OpenMlsProvider;
 
 #[derive(Default, Debug)]
@@ -14,7 +14,7 @@ pub struct OpenMlsRustPersistentCrypto {
 }
 
 impl OpenMlsRustPersistentCrypto {
-    pub async fn new(username: String, pool: LitePool) -> Self {
+    pub async fn new(username: String, pool: MLSLitePool) -> Self {
         let out = Self {
             crypto: RustCrypto::default(),
             storage: SqliteStorage::new(username, pool).await,
