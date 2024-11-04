@@ -13,13 +13,13 @@ use sqlx::Row;
 use sqlx::SqlitePool;
 
 #[derive(Debug, Clone)]
-pub struct LitePool {
+pub struct MLSLitePool {
     pub db: SqlitePool,
     pub tables: Tables,
 }
 
-impl LitePool {
-    pub async fn new(db: SqlitePool, tables: Tables) -> anyhow::Result<LitePool> {
+impl MLSLitePool {
+    pub async fn new(db: SqlitePool, tables: Tables) -> anyhow::Result<MLSLitePool> {
         tables.check()?;
 
         let this = Self { db, tables };
@@ -35,7 +35,7 @@ impl LitePool {
     }
 
     /// https://docs.rs/sqlx-sqlite/0.7.1/sqlx_sqlite/struct.SqliteConnectOptions.html#impl-FromStr-for-SqliteConnectOptions
-    pub async fn open(dbpath: &str, tables: Tables) -> anyhow::Result<LitePool> {
+    pub async fn open(dbpath: &str, tables: Tables) -> anyhow::Result<MLSLitePool> {
         let opts = dbpath
             .parse::<SqliteConnectOptions>()
             .expect("error in dbpath parse")
@@ -79,7 +79,7 @@ impl LitePool {
     }
 }
 
-impl Default for LitePool {
+impl Default for MLSLitePool {
     fn default() -> Self {
         let opts = "./sqlite_storage/mls-lite.sqlite"
             .parse::<SqliteConnectOptions>()
@@ -134,11 +134,11 @@ impl Tables {
 #[derive(Debug, Default)]
 pub struct SqliteStorage {
     username: String,
-    pool: LitePool,
+    pool: MLSLitePool,
 }
 
 impl SqliteStorage {
-    pub async fn new(username: String, pool: LitePool) -> Self {
+    pub async fn new(username: String, pool: MLSLitePool) -> Self {
         Self {
             username,
             // pool: Default::default(),
