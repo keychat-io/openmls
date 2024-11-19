@@ -161,7 +161,7 @@ impl<Provider: OpenMlsProvider> Client<Provider> {
                 .process_message(&self.provider, message.clone())
                 .map_err(ClientError::ProcessMessageError)?;
 
-            match processed_message.into_content() {
+            match processed_message.0.into_content() {
                 ProcessedMessageContent::ApplicationMessage(_) => {}
                 ProcessedMessageContent::ProposalMessage(staged_proposal) => {
                     group_state

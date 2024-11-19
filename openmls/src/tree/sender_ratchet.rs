@@ -87,10 +87,17 @@ impl SenderRatchet {
         }
     }
 
-    pub fn get_ratchet_secret(&self) -> Option<&RatchetSecret> {
+    pub fn get_encryption_ratchet_secret(&self) -> Option<&RatchetSecret> {
         match self {
             SenderRatchet::EncryptionRatchet(enc_ratchet) => Some(enc_ratchet),
             SenderRatchet::DecryptionRatchet(_) => None,
+        }
+    }
+
+    pub fn get_decryption_ratchet_secret(&self) -> Option<&DecryptionRatchet> {
+        match self {
+            SenderRatchet::EncryptionRatchet(_) => None,
+            SenderRatchet::DecryptionRatchet(dec_ratchet) => Some(dec_ratchet),
         }
     }
 }
@@ -185,7 +192,7 @@ impl RatchetSecret {
 #[cfg_attr(any(feature = "crypto-debug", test), derive(Debug))]
 pub struct DecryptionRatchet {
     past_secrets: VecDeque<Option<RatchetKeyMaterial>>,
-    ratchet_head: RatchetSecret,
+    pub ratchet_head: RatchetSecret,
 }
 
 impl DecryptionRatchet {

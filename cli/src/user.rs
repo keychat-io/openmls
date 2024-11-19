@@ -384,7 +384,7 @@ impl User {
         let mut mls_group = group.mls_group.borrow_mut();
 
         processed_message = match mls_group.process_message(&self.provider, message) {
-            Ok(msg) => msg,
+            Ok(msg) => msg.0,
             Err(e) => {
                 log::error!(
                     "Error processing unverified message: {:?} -  Dropping message.",

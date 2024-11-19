@@ -230,7 +230,7 @@ impl Group {
             openmls::framing::MlsMessageBodyIn::KeyPackage(_) => todo!(),
         };
 
-        match msg.into_content() {
+        match msg.0.into_content() {
             openmls::framing::ProcessedMessageContent::ApplicationMessage(app_msg) => {
                 Ok(app_msg.into_bytes())
             }

@@ -656,8 +656,8 @@ impl MlsClient for MlsClientImpl {
         debug!("Processed.");
         trace!(?processed_message);
 
-        let authenticated_data = processed_message.aad().to_vec();
-        let plaintext = match processed_message.into_content() {
+        let authenticated_data = processed_message.0.aad().to_vec();
+        let plaintext = match processed_message.0.into_content() {
             ProcessedMessageContent::ApplicationMessage(application_message) => {
                 application_message.into_bytes()
             }
@@ -954,7 +954,7 @@ impl MlsClient for MlsClientImpl {
                 .map_err(into_status)?;
             trace!("... done");
 
-            match processed_message.into_content() {
+            match processed_message.0.into_content() {
                 ProcessedMessageContent::ApplicationMessage(_) => unreachable!(),
                 ProcessedMessageContent::ProposalMessage(proposal) => {
                     group
@@ -1136,7 +1136,7 @@ impl MlsClient for MlsClientImpl {
                 )
                 .map_err(into_status)?;
             trace!("       done");
-            match processed_message.into_content() {
+            match processed_message.0.into_content() {
                 ProcessedMessageContent::ApplicationMessage(_) => unreachable!(),
                 ProcessedMessageContent::ProposalMessage(proposal) => {
                     group
@@ -1171,7 +1171,7 @@ impl MlsClient for MlsClientImpl {
         debug!("Processed.");
         trace!(?processed_message);
 
-        match processed_message.into_content() {
+        match processed_message.0.into_content() {
             ProcessedMessageContent::ApplicationMessage(_) => unreachable!(),
             ProcessedMessageContent::ProposalMessage(_) => unreachable!(),
             ProcessedMessageContent::ExternalJoinProposalMessage(_) => unreachable!(),
