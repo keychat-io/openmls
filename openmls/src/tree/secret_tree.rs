@@ -119,8 +119,8 @@ pub(crate) struct SecretTree {
     own_index: LeafNodeIndex,
     leaf_nodes: Vec<Option<SecretTreeNode>>,
     parent_nodes: Vec<Option<SecretTreeNode>>,
-    handshake_sender_ratchets: Vec<Option<SenderRatchet>>,
-    application_sender_ratchets: Vec<Option<SenderRatchet>>,
+    pub handshake_sender_ratchets: Vec<Option<SenderRatchet>>,
+    pub application_sender_ratchets: Vec<Option<SenderRatchet>>,
     size: TreeSize,
 }
 

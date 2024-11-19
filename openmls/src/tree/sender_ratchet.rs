@@ -70,10 +70,10 @@ pub(crate) type RatchetKeyMaterial = (AeadKey, AeadNonce);
 /// `out_of_order_tolerance` and a `maximum_forward_distance` (see
 /// [`SenderRatchetConfiguration`]) while an Encryption Ratchet never keeps past
 /// secrets around.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(any(feature = "test-utils", test), derive(PartialEq, Clone))]
 #[cfg_attr(any(feature = "crypto-debug", test), derive(Debug))]
-pub(crate) enum SenderRatchet {
+pub enum SenderRatchet {
     EncryptionRatchet(RatchetSecret),
     DecryptionRatchet(DecryptionRatchet),
 }
@@ -86,6 +86,13 @@ impl SenderRatchet {
             SenderRatchet::DecryptionRatchet(dec_ratchet) => dec_ratchet.generation(),
         }
     }
+
+    pub fn get_ratchet_secret(&self) -> Option<&RatchetSecret> {
+        match self {
+            SenderRatchet::EncryptionRatchet(enc_ratchet) => Some(enc_ratchet),
+            SenderRatchet::DecryptionRatchet(_) => None,
+        }
+    }
 }
 
 /// The core of both types of [`SenderRatchet`]. It contains the current head of
@@ -95,7 +102,7 @@ impl SenderRatchet {
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[cfg_attr(any(feature = "test-utils", test), derive(PartialEq, Clone))]
 pub(crate) struct RatchetSecret {
-    secret: Secret,
+    pub secret: Secret,
     generation: Generation,
 }
 
@@ -173,7 +180,7 @@ impl RatchetSecret {
 /// [`RatchetKeyMaterial`] of epochs around until they are retrieved. This
 /// behaviour can be configured via the `out_of_order_tolerance` and
 /// `maximum_forward_distance` of the given [`SenderRatchetConfiguration`].
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(any(feature = "test-utils", test), derive(PartialEq, Clone))]
 #[cfg_attr(any(feature = "crypto-debug", test), derive(Debug))]
 pub struct DecryptionRatchet {

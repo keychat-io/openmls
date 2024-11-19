@@ -408,10 +408,10 @@ impl<Provider: OpenMlsProvider + Default> MlsGroupTestSetup<Provider> {
                     None
                 }
             })
-            .collect::<Vec<(Vec<u8>, MlsMessageOut)>>();
+            .collect::<Vec<(Vec<u8>, (MlsMessageOut, Option<Vec<u8>>))>>();
         drop(clients);
         for (sender_id, message) in messages {
-            self.distribute_to_members(&sender_id, group, &message.into(), &authentication_service)
+            self.distribute_to_members(&sender_id, group, &message.0.into(), &authentication_service)
                 .expect("Error sending messages to clients while checking group states.");
         }
     }

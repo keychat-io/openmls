@@ -9,7 +9,7 @@ use openmls::prelude::{
     StagedWelcome,
 };
 use openmls::storage::OpenMlsProvider;
-use openmls_sqlite_storage::LitePool;
+use openmls_sqlite_storage::MLSLitePool;
 use openmls_traits::signatures::Signer;
 use openmls_traits::types::Ciphersuite;
 use std::borrow::Borrow;
@@ -35,7 +35,7 @@ async fn basic_test_create_group() {
     let tom = "Tom";
 
     let db_path = "./mls-lite.sqlite";
-    let pool = LitePool::open(&db_path, Default::default()).await.unwrap();
+    let pool = MLSLitePool::open(&db_path, Default::default()).await.unwrap();
 
     // let alice_provider = OpenMlsRustPersistentCrypto::default();
     // let bob_provider = OpenMlsRustPersistentCrypto::default();

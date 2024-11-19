@@ -581,13 +581,13 @@ fn keys_for_welcome<Provider: OpenMlsProvider>(
             )
         })
         .ok_or(WelcomeError::NoMatchingKeyPackage)??;
-    if !key_package_bundle.key_package().last_resort() {
-        provider
-            .storage()
-            .delete_key_package(&key_package_bundle.key_package.hash_ref(provider.crypto())?)
-            .map_err(WelcomeError::StorageError)?;
-    } else {
-        log::debug!("Key package has last resort extension, not deleting");
-    }
+    // if !key_package_bundle.key_package().last_resort() {
+    //     provider
+    //         .storage()
+    //         .delete_key_package(&key_package_bundle.key_package.hash_ref(provider.crypto())?)
+    //         .map_err(WelcomeError::StorageError)?;
+    // } else {
+    //     log::debug!("Key package has last resort extension, not deleting");
+    // }
     Ok((resumption_psk_store, key_package_bundle))
 }

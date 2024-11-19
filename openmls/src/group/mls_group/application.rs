@@ -18,7 +18,7 @@ impl MlsGroup {
         provider: &Provider,
         signer: &impl Signer,
         message: &[u8],
-    ) -> Result<MlsMessageOut, CreateMessageError> {
+    ) -> Result<(MlsMessageOut, Option<Vec<u8>>), CreateMessageError> {
         if !self.is_active() {
             return Err(CreateMessageError::GroupStateError(
                 MlsGroupStateError::UseAfterEviction,
@@ -42,10 +42,17 @@ impl MlsGroup {
             // We know the application message is wellformed and we have the key material of the current epoch
             .map_err(|_| LibraryError::custom("Malformed plaintext"))?;
 
+        let sender_rathchet = self.message_secrets().secret_tree().application_sender_ratchets.as_slice().iter().filter_map(|s| s.as_ref()).next();
+        let rathchet_key  = sender_rathchet.and_then(|sr| sr.get_ratchet_secret()).map(|rs| rs.secret.as_slice().to_vec());
+        // if (rathchetKey.is_some()) {
+        //     println!("The message_secrets is {:?}", rathchetKey.unwrap());
+        // }
+
         self.reset_aad();
-        Ok(MlsMessageOut::from_private_message(
+        let mls_message_out = MlsMessageOut::from_private_message(
             ciphertext,
             self.version(),
-        ))
+        );
+        Ok((mls_message_out, rathchet_key))
     }
 }

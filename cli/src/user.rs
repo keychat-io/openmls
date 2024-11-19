@@ -303,7 +303,7 @@ impl User {
             )
             .map_err(|e| format!("{e}"))?;
 
-        let msg = GroupMessage::new(message_out.into(), &self.recipients(group));
+        let msg = GroupMessage::new(message_out.0.into(), &self.recipients(group));
         log::debug!(" >>> send: {:?}", msg);
         match self.backend.send_msg(&msg) {
             Ok(()) => (),
