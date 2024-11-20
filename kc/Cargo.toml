@@ -8,7 +8,6 @@ edition = "2021"
 base64 = "0.13"
 log = "0.4"
 pretty_env_logger = "0.4"
-flutter_rust_bridge = "=2.3.0"
 
 openmls = { path = "../openmls", features = ["test-utils"] }
 openmls_traits = { path = "../traits" }
