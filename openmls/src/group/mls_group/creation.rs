@@ -581,6 +581,7 @@ fn keys_for_welcome<Provider: OpenMlsProvider>(
             )
         })
         .ok_or(WelcomeError::NoMatchingKeyPackage)??;
+    // once used key package then delete
     // if !key_package_bundle.key_package().last_resort() {
     //     provider
     //         .storage()

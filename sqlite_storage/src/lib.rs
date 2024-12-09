@@ -42,13 +42,13 @@ impl MLSLitePool {
             .create_if_missing(true)
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
             // prevent other thread open it
-            .locking_mode(sqlx::sqlite::SqliteLockingMode::Exclusive)
+            .locking_mode(sqlx::sqlite::SqliteLockingMode::Normal)
             // or normal
-            .synchronous(sqlx::sqlite::SqliteSynchronous::Full);
+            .synchronous(sqlx::sqlite::SqliteSynchronous::Normal);
 
         log::trace!("SqlitePool open: {:?}", opts);
         let db = sqlx::sqlite::SqlitePoolOptions::new()
-            .max_connections(1)
+            // .max_connections(1)
             .connect_with(opts)
             .await
             .expect("error in connect_with");
