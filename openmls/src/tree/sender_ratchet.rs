@@ -56,7 +56,7 @@ impl SenderRatchetConfiguration {
 
 impl Default for SenderRatchetConfiguration {
     fn default() -> Self {
-        Self::new(5, 1000)
+        Self::new(100, 1000)
     }
 }
 
