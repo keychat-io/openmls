@@ -6,15 +6,30 @@
 use openmls_rust_crypto::RustCrypto;
 use openmls_sqlite_storage::{Codec, Connection, SqliteStorageProvider};
 use openmls_traits::OpenMlsProvider;
-use std::borrow::Borrow;
 
-pub struct OpenMlsRustPersistentCrypto<C: Codec, ConnectionRef: Borrow<Connection>> {
-    pub crypto: RustCrypto,
-    pub storage: SqliteStorageProvider<C, ConnectionRef>,
+
+#[derive(Default)]
+pub struct JsonCodec;
+
+impl Codec for JsonCodec {
+    type Error = serde_json::Error;
+
+    fn to_vec<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, Self::Error> {
+        serde_json::to_vec(value)
+    }
+
+    fn from_slice<T: serde::de::DeserializeOwned>(slice: &[u8]) -> Result<T, Self::Error> {
+        serde_json::from_slice(slice)
+    }
 }
 
-impl<C: Codec, ConnectionRef: Borrow<Connection>> OpenMlsRustPersistentCrypto<C, ConnectionRef> {
-    pub async fn new(storage: SqliteStorageProvider<C, ConnectionRef>) -> Self {
+pub struct OpenMlsRustPersistentCrypto {
+    pub crypto: RustCrypto,
+    pub storage: SqliteStorageProvider<JsonCodec, Connection>,
+}
+
+impl OpenMlsRustPersistentCrypto {
+    pub async fn new(storage: SqliteStorageProvider<JsonCodec, Connection>) -> Self {
         let out = Self {
             crypto: RustCrypto::default(),
             storage,
@@ -23,12 +38,23 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> OpenMlsRustPersistentCrypto<C,
     }
 }
 
-impl<C: Codec, ConnectionRef: Borrow<Connection>> OpenMlsProvider
-    for OpenMlsRustPersistentCrypto<C, ConnectionRef>
+impl Default for OpenMlsRustPersistentCrypto {
+    fn default() -> Self {
+        let connection = Connection::open_in_memory().unwrap();
+        let mut storage = SqliteStorageProvider::new(connection);
+        storage.initialize().unwrap();
+        Self {
+            crypto: RustCrypto::default(),
+            storage,
+        }
+    }
+}
+
+impl OpenMlsProvider for OpenMlsRustPersistentCrypto
 {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
-    type StorageProvider = SqliteStorageProvider<C, ConnectionRef>;
+    type StorageProvider = SqliteStorageProvider<JsonCodec, Connection>;
 
     fn storage(&self) -> &Self::StorageProvider {
         &self.storage

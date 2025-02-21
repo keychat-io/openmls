@@ -1,25 +1,25 @@
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_sqlite_storage::{Codec, Connection};
 use openmls_traits::OpenMlsProvider;
 use std::collections::HashMap;
-use std::{borrow::Borrow, marker::PhantomData};
 
-use super::openmls_rust_persistent_crypto::OpenMlsRustPersistentCrypto;
+use super::{openmls_rust_persistent_crypto::OpenMlsRustPersistentCrypto, serialize_any_hashmap};
 
-#[derive(Clone)]
-pub struct Identity<C: Codec, ConnectionRef: Borrow<Connection>> {
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct Identity {
+    #[serde(
+        serialize_with = "serialize_any_hashmap::serialize_hashmap",
+        deserialize_with = "serialize_any_hashmap::deserialize_hashmap"
+    )]
     pub kp: HashMap<Vec<u8>, KeyPackage>,
     pub credential_with_key: CredentialWithKey,
     pub signer: SignatureKeyPair,
-    _codec: PhantomData<C>,
-    _phantom: PhantomData<ConnectionRef>,
 }
 
-impl<C: Codec, ConnectionRef: Borrow<Connection>> Identity<C, ConnectionRef> {
+impl Identity {
     pub fn new(
         ciphersuite: Ciphersuite,
-        crypto: &OpenMlsRustPersistentCrypto<C, ConnectionRef>,
+        crypto: &OpenMlsRustPersistentCrypto,
         username: &[u8],
     ) -> Self {
         let credential = BasicCredential::new(username.to_vec());
@@ -34,8 +34,6 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> Identity<C, ConnectionRef> {
             kp: HashMap::from([]),
             credential_with_key,
             signer: signature_keys,
-            _codec: PhantomData,
-            _phantom: PhantomData,
         }
     }
 
@@ -44,7 +42,7 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> Identity<C, ConnectionRef> {
     pub fn add_key_package(
         &mut self,
         ciphersuite: Ciphersuite,
-        crypto: &OpenMlsRustPersistentCrypto<C, ConnectionRef>,
+        crypto: &OpenMlsRustPersistentCrypto,
     ) -> KeyPackage {
         let key_package = KeyPackage::builder()
             .build(

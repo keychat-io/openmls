@@ -15,3 +15,4 @@ fuzz/artifacts
 *.iws
 *.iml
 *.ipr
+*mls-lite.sqlite
