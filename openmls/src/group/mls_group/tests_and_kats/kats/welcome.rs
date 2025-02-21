@@ -14,10 +14,11 @@
 //!   * Decrypt the encrypted group info
 //! * Verify the signature on the decrypted group info using `signer_pub`
 //! * Verify the `confirmation_tag` in the decrypted group info:
-//!   * Initialize a key schedule epoch using the decrypted `joiner_secret` and no PSKs
-//!   * Recompute a candidate `confirmation_tag` value using the `confirmation_key`
-//!     from the key schedule epoch and the `confirmed_transcript_hash` from the
-//!     decrypted GroupContext
+//!   * Initialize a key schedule epoch using the decrypted `joiner_secret` and
+//!     no PSKs
+//!   * Recompute a candidate `confirmation_tag` value using the
+//!     `confirmation_key` from the key schedule epoch and the
+//!     `confirmed_transcript_hash` from the decrypted GroupContext
 
 use crate::{test_utils::OpenMlsRustCrypto, treesync::node::encryption_keys::EncryptionPrivateKey};
 use openmls_traits::{crypto::OpenMlsCrypto, storage::StorageProvider, OpenMlsProvider};
@@ -241,8 +242,11 @@ pub fn run_test_vector(test_vector: WelcomeTestVector) -> Result<(), &'static st
 
     // * Verify the confirmation_tag in the decrypted group info:
     //
-    //   * Initialize a key schedule epoch using the decrypted joiner_secret and no PSKs
-    //   * Recompute a candidate confirmation_tag value using the confirmation_key from the key schedule epoch and the confirmed_transcript_hash from the decrypted GroupContext
+    //   * Initialize a key schedule epoch using the decrypted joiner_secret and no
+    //     PSKs
+    //   * Recompute a candidate confirmation_tag value using the confirmation_key
+    //     from the key schedule epoch and the confirmed_transcript_hash from the
+    //     decrypted GroupContext
     let group_context = group_info.group_context().clone();
 
     let serialized_group_context = group_context.tls_serialize_detached().unwrap();

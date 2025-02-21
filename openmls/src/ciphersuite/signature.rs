@@ -1,6 +1,7 @@
 //! Signatures.
 //!
-//! This module contains structs for creating signature keys, issuing signatures and verifying them.
+//! This module contains structs for creating signature keys, issuing signatures
+//! and verifying them.
 
 use super::{LABEL_PREFIX, *};
 
@@ -87,8 +88,9 @@ impl From<&[u8]> for SignaturePublicKey {
 }
 
 impl SignaturePublicKey {
-    /// Convert the "raw" signature into an enriched form, [OpenMlsSignaturePublicKey], that
-    /// already contains the signature scheme.
+    /// Convert the "raw" signature into an enriched form,
+    /// [OpenMlsSignaturePublicKey], that already contains the signature
+    /// scheme.
     pub fn into_signature_public_key_enriched(
         self,
         signature_scheme: SignatureScheme,
@@ -126,7 +128,7 @@ impl Signature {
     pub(crate) fn modify(&mut self, value: &[u8]) {
         self.value = value.to_vec().into();
     }
-    pub(crate) fn as_slice(&self) -> &[u8] {
+    pub(crate) fn _as_slice(&self) -> &[u8] {
         self.value.as_slice()
     }
 }

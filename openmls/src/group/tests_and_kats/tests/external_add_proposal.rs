@@ -147,7 +147,8 @@ fn external_add_proposal_should_succeed<Provider: OpenMlsProvider>() {
             )
             .unwrap();
 
-        // an external proposal is always plaintext and has sender type 'new_member_proposal'
+        // an external proposal is always plaintext and has sender type
+        // 'new_member_proposal'
         let verify_proposal = |msg: &PublicMessage| {
             *msg.sender() == Sender::NewMemberProposal
                 && msg.content_type() == ContentType::Proposal
@@ -264,7 +265,8 @@ fn external_add_proposal_should_be_signed_by_key_package_it_references<
         )
         .unwrap();
 
-    // fails because the message was not signed by the same credential as the one in the Add proposal
+    // fails because the message was not signed by the same credential as the one in
+    // the Add proposal
     assert!(matches!(
         alice_group
             .process_message(provider, invalid_proposal.into_protocol_message().unwrap())
@@ -273,7 +275,8 @@ fn external_add_proposal_should_be_signed_by_key_package_it_references<
     ));
 }
 
-// TODO #1093: move this test to a dedicated external proposal ValSem test module once all external proposals implemented
+// TODO #1093: move this test to a dedicated external proposal ValSem test
+// module once all external proposals implemented
 #[openmls_test]
 fn new_member_proposal_sender_should_be_reserved_for_join_proposals<Provider: OpenMlsProvider>() {
     let ProposalValidationTestSetup {

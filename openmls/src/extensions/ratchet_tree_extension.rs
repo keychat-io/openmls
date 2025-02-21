@@ -5,8 +5,9 @@ use crate::treesync::{RatchetTree, RatchetTreeIn};
 
 /// # Ratchet Tree Extension.
 ///
-/// The ratchet tree extension contains a list of (optional) [`Node`](crate::treesync::node::Node)s that
-/// represent the public state of the tree in an MLS group.
+/// The ratchet tree extension contains a list of (optional)
+/// [`Node`](crate::treesync::node::Node)s that represent the public state of
+/// the tree in an MLS group.
 ///
 /// ```c
 /// // draft-ietf-mls-protocol-17
@@ -29,7 +30,8 @@ pub struct RatchetTreeExtension {
 }
 
 impl RatchetTreeExtension {
-    /// Build a new extension from a vector of [`Node`](crate::treesync::node::Node)s.
+    /// Build a new extension from a vector of
+    /// [`Node`](crate::treesync::node::Node)s.
     pub fn new(ratchet_tree: RatchetTree) -> Self {
         RatchetTreeExtension {
             ratchet_tree: ratchet_tree.into(),

@@ -16,7 +16,8 @@
 //! ]
 //! ```
 //!
-//! This Test contains a List of Serialized Variable Length Headers (`vlbytes_header`)  and a length.
+//! This Test contains a List of Serialized Variable Length Headers
+//! (`vlbytes_header`)  and a length.
 //!
 //! Verification:
 //! * Decode the `vlbytes_header`

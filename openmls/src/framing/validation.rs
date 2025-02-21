@@ -1,7 +1,7 @@
 //! # Validation steps for incoming messages
 //!
 //! ```text
-//!
+//! 
 //!                             MlsMessageIn
 //!                                  │                    -.
 //!                                  │                      │
@@ -19,7 +19,6 @@
 //!                                  │                      │
 //!                                  ▼                    -'
 //!                          ProcessedMessage
-//!
 //! ```
 // TODO #106/#151: Update the above diagram
 
@@ -44,9 +43,10 @@ use super::{
     *,
 };
 
-/// Intermediate message that can be constructed either from a public message or from private message.
-/// If it it constructed from a ciphertext message, the ciphertext message is decrypted first.
-/// This function implements the following checks:
+/// Intermediate message that can be constructed either from a public message or
+/// from private message. If it it constructed from a ciphertext message, the
+/// ciphertext message is decrypted first. This function implements the
+/// following checks:
 ///  - ValSem005
 ///  - ValSem007
 ///  - ValSem009
@@ -71,9 +71,9 @@ impl DecryptedMessage {
             }
 
             if let Some(message_secrets) = message_secrets_option.into() {
-                // Verify the membership tag. This needs to be done explicitly for PublicMessage messages,
-                // it is implicit for PrivateMessage messages (because the encryption can only be known by members).
-                // ValSem008
+                // Verify the membership tag. This needs to be done explicitly for PublicMessage
+                // messages, it is implicit for PrivateMessage messages (because
+                // the encryption can only be known by members). ValSem008
                 // https://validation.openmls.tech/#valn1302
                 public_message.verify_membership(
                     crypto,
@@ -89,8 +89,8 @@ impl DecryptedMessage {
         Self::from_verifiable_content(verifiable_content)
     }
 
-    /// Constructs a [DecryptedMessage] from a [PrivateMessage] by attempting to decrypt it
-    /// to a [VerifiableAuthenticatedContent] first.
+    /// Constructs a [DecryptedMessage] from a [PrivateMessage] by attempting to
+    /// decrypt it to a [VerifiableAuthenticatedContent] first.
     pub(crate) fn from_inbound_ciphertext(
         ciphertext: PrivateMessageIn,
         crypto: &impl OpenMlsCrypto,
@@ -125,7 +125,8 @@ impl DecryptedMessage {
 
     // Internal constructor function. Does the following checks:
     // - Confirmation tag must be present for Commit messages
-    // - Membership tag must be present for member messages, if the original incoming message was not an PrivateMessage
+    // - Membership tag must be present for member messages, if the original
+    //   incoming message was not an PrivateMessage
     // - Ensures application messages were originally PrivateMessage messages
     fn from_verifiable_content(
         verifiable_content: VerifiableAuthenticatedContentIn,
@@ -141,24 +142,27 @@ impl DecryptedMessage {
             if verifiable_content.wire_format() != WireFormat::PrivateMessage {
                 return Err(ValidationError::UnencryptedApplicationMessage);
             } else if !verifiable_content.sender().is_member() {
-                // This should not happen because the sender of an PrivateMessage should always be a member
+                // This should not happen because the sender of an PrivateMessage should always
+                // be a member
                 return Err(LibraryError::custom("Expected sender to be member.").into());
             }
         }
         Ok(DecryptedMessage { verifiable_content })
     }
 
-    /// Gets the correct credential from the message depending on the sender type.
+    /// Gets the correct credential from the message depending on the sender
+    /// type.
     ///
-    /// The closure argument is used to look up the credential and signature key. If the epoch of
-    /// the message is the same as that of the group, look it up in the tree; else, look in up in
-    /// the past trees of the message secret store.
+    /// The closure argument is used to look up the credential and signature
+    /// key. If the epoch of the message is the same as that of the group,
+    /// look it up in the tree; else, look in up in the past trees of the
+    /// message secret store.
     ///
     /// Checks the following semantic validation:
     ///  - ValSem112
     ///  - ValSem245
-    ///  - Prepares ValSem246 by setting the right credential. The remainder
-    ///    of ValSem246 is validated as part of ValSem010.
+    ///  - Prepares ValSem246 by setting the right credential. The remainder of
+    ///    ValSem246 is validated as part of ValSem010.
     ///  - [valn1301](https://validation.openmls.tech/#valn1301)
     ///
     /// Returns the [`Credential`] and the leaf's [`SignaturePublicKey`].
@@ -210,8 +214,8 @@ pub(crate) enum SenderContext {
     ExternalCommit((GroupId, LeafNodeIndex)),
 }
 
-/// Partially checked and potentially decrypted message (if it was originally encrypted).
-/// Use this to inspect the [`Credential`] of the message sender
+/// Partially checked and potentially decrypted message (if it was originally
+/// encrypted). Use this to inspect the [`Credential`] of the message sender
 /// and the optional `aad` if the original message was encrypted.
 /// The [`OpenMlsSignaturePublicKey`] is used to verify the signature of the
 /// message.
@@ -224,7 +228,8 @@ pub(crate) struct UnverifiedMessage {
 }
 
 impl UnverifiedMessage {
-    /// Construct an [UnverifiedMessage] from a [DecryptedMessage] and an optional [Credential].
+    /// Construct an [UnverifiedMessage] from a [DecryptedMessage] and an
+    /// optional [Credential].
     pub(crate) fn from_decrypted_message(
         decrypted_message: DecryptedMessage,
         credential: Credential,
@@ -334,32 +339,39 @@ impl ProcessedMessage {
 /// Content of a processed message.
 ///
 /// See the content variants' documentation for more information.
-/// [`StagedCommit`] and [`QueuedProposal`] can be inspected for authorization purposes.
+/// [`StagedCommit`] and [`QueuedProposal`] can be inspected for authorization
+/// purposes.
 #[derive(Debug)]
 pub enum ProcessedMessageContent {
     /// An application message.
     ///
-    /// The [`ApplicationMessage`] contains a vector of bytes that can be used right-away.
+    /// The [`ApplicationMessage`] contains a vector of bytes that can be used
+    /// right-away.
     ApplicationMessage(ApplicationMessage),
     /// A standalone proposal.
     ///
-    /// The [`QueuedProposal`] can be inspected for authorization purposes by the application.
-    /// If the proposal is deemed to be allowed, it should be added to the group's proposal
-    /// queue using [`MlsGroup::store_pending_proposal()`](crate::group::mls_group::MlsGroup::store_pending_proposal()).
+    /// The [`QueuedProposal`] can be inspected for authorization purposes by
+    /// the application. If the proposal is deemed to be allowed, it should
+    /// be added to the group's proposal queue using
+    /// [`MlsGroup::store_pending_proposal()`](crate::group::mls_group::MlsGroup::store_pending_proposal()).
+    ///
     ProposalMessage(Box<QueuedProposal>),
     /// An [external join proposal](crate::prelude::JoinProposal) sent by a
-    /// [NewMemberProposal](crate::prelude::Sender::NewMemberProposal) sender which is outside the group.
+    /// [NewMemberProposal](crate::prelude::Sender::NewMemberProposal) sender
+    /// which is outside the group.
     ///
-    /// Since this originates from a party outside the group, the [`QueuedProposal`] SHOULD be
-    /// inspected for authorization purposes by the application. If the proposal is deemed to be
-    /// allowed, it should be added to the group's proposal queue using
+    /// Since this originates from a party outside the group, the
+    /// [`QueuedProposal`] SHOULD be inspected for authorization purposes by
+    /// the application. If the proposal is deemed to be allowed, it should
+    /// be added to the group's proposal queue using
     /// [`MlsGroup::store_pending_proposal()`](crate::group::mls_group::MlsGroup::store_pending_proposal()).
     ExternalJoinProposalMessage(Box<QueuedProposal>),
     /// A Commit message.
     ///
-    /// The [`StagedCommit`] can be inspected for authorization purposes by the application.
-    /// If the type of the commit and the proposals it covers are deemed to be allowed,
-    /// the commit should be merged into the group's state using
+    /// The [`StagedCommit`] can be inspected for authorization purposes by the
+    /// application. If the type of the commit and the proposals it covers
+    /// are deemed to be allowed, the commit should be merged into the
+    /// group's state using
     /// [`MlsGroup::merge_staged_commit()`](crate::group::mls_group::MlsGroup::merge_staged_commit()).
     StagedCommitMessage(Box<StagedCommit>),
 }

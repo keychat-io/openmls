@@ -98,7 +98,8 @@ pub enum ProcessMessageError {
     /// See [`LibraryError`] for more details.
     #[error(transparent)]
     LibraryError(#[from] LibraryError),
-    /// The message's wire format is incompatible with the group's wire format policy.
+    /// The message's wire format is incompatible with the group's wire format
+    /// policy.
     #[error("The message's wire format is incompatible with the group's wire format policy.")]
     IncompatibleWireFormat,
     /// See [`ValidationError`] for more details.
@@ -113,7 +114,8 @@ pub enum ProcessMessageError {
     /// External application messages are not permitted.
     #[error("External application messages are not permitted.")]
     UnauthorizedExternalApplicationMessage,
-    /// The proposal is invalid for the Sender of type [External](crate::prelude::Sender::External)
+    /// The proposal is invalid for the Sender of type
+    /// [External](crate::prelude::Sender::External)
     #[error("The proposal is invalid for the Sender of type External")]
     UnsupportedProposalType,
 }

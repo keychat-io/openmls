@@ -248,8 +248,8 @@ impl ProcessedWelcome {
             return Err(WelcomeError::JoinerSecretNotFound);
         };
 
-        // This check seems to be superfluous from the perspective of the RFC, but still doesn't
-        // seem like a bad idea.
+        // This check seems to be superfluous from the perspective of the RFC, but still
+        // doesn't seem like a bad idea.
         if welcome.ciphersuite() != key_package_bundle.key_package().ciphersuite() {
             let e = WelcomeError::CiphersuiteMismatch;
             log::debug!("new_from_welcome {:?}", e);
@@ -324,14 +324,16 @@ impl ProcessedWelcome {
 
     /// Get a reference to the GroupInfo in this Welcome message.
     ///
-    /// **NOTE:** The group info contains **unverified** values. Use with caution.
+    /// **NOTE:** The group info contains **unverified** values. Use with
+    /// caution.
     pub fn unverified_group_info(&self) -> &VerifiableGroupInfo {
         &self.verifiable_group_info
     }
 
     /// Get a reference to the PSKs in this Welcome message.
     ///
-    /// **NOTE:** The group info contains **unverified** values. Use with caution.
+    /// **NOTE:** The group info contains **unverified** values. Use with
+    /// caution.
     pub fn psks(&self) -> &[PreSharedKeyId] {
         &self.group_secrets.psks
     }
@@ -480,11 +482,12 @@ impl ProcessedWelcome {
 }
 
 impl StagedWelcome {
-    /// Creates a new staged welcome from a [`Welcome`] message. Returns an error
-    /// ([`WelcomeError::NoMatchingKeyPackage`]) if no [`KeyPackage`]
+    /// Creates a new staged welcome from a [`Welcome`] message. Returns an
+    /// error ([`WelcomeError::NoMatchingKeyPackage`]) if no [`KeyPackage`]
     /// can be found.
-    /// Note: calling this function will consume the key material for decrypting the [`Welcome`]
-    /// message, even if the caller does not turn the [`StagedWelcome`] into an [`MlsGroup`].
+    /// Note: calling this function will consume the key material for decrypting
+    /// the [`Welcome`] message, even if the caller does not turn the
+    /// [`StagedWelcome`] into an [`MlsGroup`].
     ///
     /// [`Welcome`]: crate::messages::Welcome
     pub fn new_from_welcome<Provider: OpenMlsProvider>(
@@ -499,14 +502,16 @@ impl StagedWelcome {
         processed_welcome.into_staged_welcome(provider, ratchet_tree)
     }
 
-    /// Returns the [`LeafNodeIndex`] of the group member that authored the [`Welcome`] message.
+    /// Returns the [`LeafNodeIndex`] of the group member that authored the
+    /// [`Welcome`] message.
     ///
     /// [`Welcome`]: crate::messages::Welcome
     pub fn welcome_sender_index(&self) -> LeafNodeIndex {
         self.verifiable_group_info.signer()
     }
 
-    /// Returns the [`LeafNode`] of the group member that authored the [`Welcome`] message.
+    /// Returns the [`LeafNode`] of the group member that authored the
+    /// [`Welcome`] message.
     ///
     /// [`Welcome`]: crate::messages::Welcome
     pub fn welcome_sender(&self) -> Result<&LeafNode, LibraryError> {

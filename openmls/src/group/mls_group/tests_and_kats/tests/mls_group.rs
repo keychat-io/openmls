@@ -344,7 +344,8 @@ fn test_invalid_plaintext() {
         number_of_clients,
         CodecUse::StructMessages,
     );
-    // Create a basic group with more than 4 members to create a tree with intermediate nodes.
+    // Create a basic group with more than 4 members to create a tree with
+    // intermediate nodes.
     let group_id = setup
         .create_random_group(10, ciphersuite, noop_authentication_service)
         .expect("An unexpected error occurred.");
@@ -369,15 +370,17 @@ fn test_invalid_plaintext() {
         .self_update(Commit, &group_id, LeafNodeParameters::default())
         .expect("error creating self update");
 
-    // Store the context and membership key so that we can re-compute the membership tag later.
+    // Store the context and membership key so that we can re-compute the membership
+    // tag later.
     let client_groups = client.groups.read().unwrap();
     let client_group = client_groups.get(&group_id).unwrap();
     let membership_key = client_group.message_secrets().membership_key();
 
     // Tamper with the message such that signature verification fails
-    // Once #574 is addressed the new function from there should be used to manipulate the signature.
-    // Right now the membership tag is verified first, wihich yields `VerificationError::InvalidMembershipTag`
-    // error instead of a `CredentialError:InvalidSignature`.
+    // Once #574 is addressed the new function from there should be used to
+    // manipulate the signature. Right now the membership tag is verified first,
+    // wihich yields `VerificationError::InvalidMembershipTag` error instead of
+    // a `CredentialError:InvalidSignature`.
     let mut msg_invalid_signature = mls_message.clone();
     if let MlsMessageBodyOut::PublicMessage(ref mut pt) = msg_invalid_signature.body {
         pt.invalidate_signature()
@@ -533,7 +536,8 @@ fn test_verify_staged_commit_credentials(
     );
     // Bob is added and the state aligns.
 
-    // === Make a new, empty commit and check that the leaf node credentials match ===
+    // === Make a new, empty commit and check that the leaf node credentials match
+    // ===
     let (commit_msg, _welcome_option, _group_info) = alice_group
         .self_update(provider, &alice_signer, LeafNodeParameters::default())
         .expect("error creating self-update commit")
@@ -716,7 +720,8 @@ fn test_commit_with_update_path_leaf_node(
     );
     // Bob is added and the state aligns.
 
-    // === Make a new, empty commit and check that the leaf node credentials match ===
+    // === Make a new, empty commit and check that the leaf node credentials match
+    // ===
 
     println!("\nCreating self-update commit.");
     let (commit_msg, _welcome_option, _group_info) = alice_group
@@ -734,8 +739,8 @@ fn test_commit_with_update_path_leaf_node(
         .pending_commit()
         .expect("alice should have the self-update as pending commit");
 
-    // The credential on the update_path leaf node should be set and be the same as alice's
-    // credential
+    // The credential on the update_path leaf node should be set and be the same as
+    // alice's credential
     let alice_update_path_leaf_node = alice_pending_commit
         .update_path_leaf_node()
         .expect("expected alice's staged commit to have an update path");
@@ -781,7 +786,8 @@ fn test_commit_with_update_path_leaf_node(
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
         processed_message.into_content()
     {
-        // bob must check the credential in the leaf node of the update_path of alice's commit
+        // bob must check the credential in the leaf node of the update_path of alice's
+        // commit
         let bob_update_path_leaf_node = staged_commit
             .update_path_leaf_node()
             .expect("staged commit received by bob should carry an update path with a leaf node");
@@ -979,7 +985,8 @@ fn test_pending_commit_logic(
             .unwrap()
     );
 
-    // While a commit is pending, merging Bob's commit should clear the pending commit.
+    // While a commit is pending, merging Bob's commit should clear the pending
+    // commit.
     let (_msg, _welcome_option, _group_info) = alice_group
         .self_update(provider, &alice_signer, LeafNodeParameters::default())
         .expect("error creating self-update commit")
@@ -1305,7 +1312,8 @@ fn builder_pattern() {
     assert_eq!(builder_err, LeafNodeValidationError::UnsupportedExtensions);
 }
 
-// Test the successful update of Group Context Extension with type Extension::Unknown(0xff11)
+// Test the successful update of Group Context Extension with type
+// Extension::Unknown(0xff11)
 #[openmls_test]
 fn update_group_context_with_unknown_extension<Provider: OpenMlsProvider + Default>() {
     let alice_provider = Provider::default();
@@ -1787,7 +1795,8 @@ fn test_update_group_context_with_unknown_extension_using_update_function<
         "The data of Extension::Unknown(0xff11) does not match the expected data"
     );
 
-    // === Propose the new group context extension using update_group_context_extensions ===
+    // === Propose the new group context extension using
+    // update_group_context_extensions ===
     let updated_unknown_extension_data = vec![3, 4];
     let updated_unknown_gc_extension = Extension::Unknown(
         UNKNOWN_EXTENSION_TYPE,
@@ -1808,7 +1817,8 @@ fn test_update_group_context_with_unknown_extension_using_update_function<
         update_result.err()
     );
 
-    // === Test clearing staged commit before merge, verify context shows expected data ===
+    // === Test clearing staged commit before merge, verify context shows expected
+    // data ===
     alice_group
         .clear_pending_commit(provider.storage())
         .unwrap();
@@ -1825,7 +1835,8 @@ fn test_update_group_context_with_unknown_extension_using_update_function<
         "The data of Extension::Unknown(0xff11) does not match the expected data"
     );
 
-    // === Propose the new group context extension using update_group_context_extensions ===
+    // === Propose the new group context extension using
+    // update_group_context_extensions ===
     let updated_unknown_extension_data = vec![4, 5]; // Sample data for the extension
     let updated_unknown_gc_extension = Extension::Unknown(
         UNKNOWN_EXTENSION_TYPE,
@@ -1863,7 +1874,8 @@ fn test_update_group_context_with_unknown_extension_using_update_function<
     );
 }
 
-// Test that unknown group context and leaf node extensions can be used in groups
+// Test that unknown group context and leaf node extensions can be used in
+// groups
 #[openmls_test]
 fn unknown_extensions() {
     let (alice_credential_with_key, _alice_kpb, alice_signer, _alice_pk) =
@@ -1906,7 +1918,8 @@ fn unknown_extensions() {
         &Extensions::single(unknown_leaf_extension)
     );
 
-    // Now let's add Bob to the group and make sure that he joins the group successfully
+    // Now let's add Bob to the group and make sure that he joins the group
+    // successfully
 
     // === Alice adds Bob ===
     let (bob_credential_with_key, _bob_kpb, bob_signer, _bob_pk) =
@@ -1989,7 +2002,8 @@ fn join_multiple_groups_last_resort_extension(
             charlie_credential_with_key,
         )
         .expect("error building key package for charlie");
-    // alice calls add_members(...) with charlie's KeyPackage; produces Commit and Welcome messages
+    // alice calls add_members(...) with charlie's KeyPackage; produces Commit and
+    // Welcome messages
     let (_, alice_welcome, _) = alice_group
         .add_members(
             provider,
@@ -2000,7 +2014,8 @@ fn join_multiple_groups_last_resort_extension(
     alice_group
         .merge_pending_commit(provider)
         .expect("error merging commit for alice's group");
-    // charlie calls new_from_welcome(...) with alice's Welcome message; SHOULD SUCCEED
+    // charlie calls new_from_welcome(...) with alice's Welcome message; SHOULD
+    // SUCCEED
 
     let alice_welcome: MlsMessageIn = alice_welcome.into();
     let alice_welcome = alice_welcome
@@ -2017,7 +2032,8 @@ fn join_multiple_groups_last_resort_extension(
     .into_group(provider)
     .expect("error creating group from staged join");
 
-    // bob calls add_members(...) with charlie's KeyPackage; produces Commit and Welcome messages
+    // bob calls add_members(...) with charlie's KeyPackage; produces Commit and
+    // Welcome messages
     let (_, bob_welcome, _) = bob_group
         .add_members(
             provider,
@@ -2028,7 +2044,8 @@ fn join_multiple_groups_last_resort_extension(
     bob_group
         .merge_pending_commit(provider)
         .expect("error merging commit for bob's group");
-    // charlie calls new_from_welcome(...) with bob's Welcome message; SHOULD SUCCEED
+    // charlie calls new_from_welcome(...) with bob's Welcome message; SHOULD
+    // SUCCEED
     let bob_welcome: MlsMessageIn = bob_welcome.into();
     let bob_welcome = bob_welcome
         .into_welcome()
@@ -2618,9 +2635,9 @@ fn proposal_application_after_self_was_removed(
     .into_group(provider)
     .expect("Error creating group from welcome.");
 
-    // We can now check that Bob correctly processed his commit and applied the changes
-    // to his tree after he was removed by comparing membership lists. In
-    // particular, Bob's list should show that he was removed and Charlie was
+    // We can now check that Bob correctly processed his commit and applied the
+    // changes to his tree after he was removed by comparing membership lists.
+    // In particular, Bob's list should show that he was removed and Charlie was
     // added.
     let alice_members = alice_group.members();
 

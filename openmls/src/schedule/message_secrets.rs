@@ -1,8 +1,10 @@
-//! This module defines the [`MessageSecrets`] struct that can be used for message decryption & verification
+//! This module defines the [`MessageSecrets`] struct that can be used for
+//! message decryption & verification
 
 use super::*;
 
-/// Combined message secrets that need to be stored for later decryption/verification
+/// Combined message secrets that need to be stored for later
+/// decryption/verification
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "test-utils"), derive(Clone))]
 #[cfg_attr(feature = "crypto-debug", derive(Debug))]

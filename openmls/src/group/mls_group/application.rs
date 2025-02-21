@@ -10,9 +10,10 @@ impl MlsGroup {
     /// Creates an application message.
     /// Returns `CreateMessageError::MlsGroupStateError::UseAfterEviction`
     /// if the member is no longer part of the group.
-    /// Returns `CreateMessageError::MlsGroupStateError::PendingProposal` if pending proposals
-    /// exist. In that case `.process_pending_proposals()` must be called first
-    /// and incoming messages from the DS must be processed afterwards.
+    /// Returns `CreateMessageError::MlsGroupStateError::PendingProposal` if
+    /// pending proposals exist. In that case `.process_pending_proposals()`
+    /// must be called first and incoming messages from the DS must be
+    /// processed afterwards.
     pub fn create_message<Provider: OpenMlsProvider>(
         &mut self,
         provider: &Provider,
@@ -39,7 +40,8 @@ impl MlsGroup {
         )?;
         let ciphertext = self
             .encrypt(authenticated_content, provider)
-            // We know the application message is wellformed and we have the key material of the current epoch
+            // We know the application message is wellformed and we have the key material of the
+            // current epoch
             .map_err(|_| LibraryError::custom("Malformed plaintext"))?;
 
         self.reset_aad();

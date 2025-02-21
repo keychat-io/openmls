@@ -191,7 +191,7 @@ impl From<PublicMessage> for FramedContentTbs {
 ///     WireFormat wire_format;
 ///     FramedContent content; /* with content_type == commit */
 ///     opaque signature<V>;
-///} ConfirmedTranscriptHashInput;
+/// } ConfirmedTranscriptHashInput;
 /// ```
 #[derive(TlsSerialize, TlsSize)]
 pub(crate) struct ConfirmedTranscriptHashInput<'a> {

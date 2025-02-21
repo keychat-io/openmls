@@ -92,7 +92,8 @@ fn test_external_commit() {
         .unwrap();
     }
 
-    // Now, Bob wants to join Alice' group by an external commit. (Negative case, broken signature.)
+    // Now, Bob wants to join Alice' group by an external commit. (Negative case,
+    // broken signature.)
     {
         let (bob_credential, bob_signature_keys) =
             new_credential(provider, b"Bob", ciphersuite.signature_algorithm());

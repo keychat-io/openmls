@@ -163,9 +163,11 @@ impl PublicGroup {
                 return Err(StageCommitError::SenderTypeNewMemberProposal);
             }
             Sender::NewMemberCommit => {
-                // ValSem240: External Commit, inline Proposals: There MUST be at least one ExternalInit proposal.
-                // ValSem241: External Commit, inline Proposals: There MUST be at most one ExternalInit proposal.
-                // ValSem242: External Commit must only cover inline proposal in allowlist (ExternalInit, Remove, PreSharedKey)
+                // ValSem240: External Commit, inline Proposals: There MUST be at least one
+                // ExternalInit proposal. ValSem241: External Commit, inline
+                // Proposals: There MUST be at most one ExternalInit proposal.
+                // ValSem242: External Commit must only cover inline proposal in allowlist
+                // (ExternalInit, Remove, PreSharedKey)
                 self.validate_external_commit(&proposal_queue)?;
             }
         }
@@ -236,7 +238,7 @@ impl PublicGroup {
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241

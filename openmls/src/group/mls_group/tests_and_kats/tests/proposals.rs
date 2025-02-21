@@ -432,8 +432,9 @@ fn group_context_extension_proposal_fails(
     //    UnknownExtension(vec![0, 1, 2, 3]),
     //));
     //let e = bob_group
-    //    .propose_group_context_extensions(provider, unsupported_extensions, &bob_signer)
-    //    .expect_err("Bob was able to propose an extension not supported by all other parties.");
+    //    .propose_group_context_extensions(provider, unsupported_extensions,
+    // &bob_signer)    .expect_err("Bob was able to propose an extension not
+    // supported by all other parties.");
     //
     //assert_eq!(
     //    e,

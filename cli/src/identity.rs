@@ -55,7 +55,8 @@ impl Identity {
         }
     }
 
-    /// Create an additional key package using the credential_with_key/signer bound to this identity
+    /// Create an additional key package using the credential_with_key/signer
+    /// bound to this identity
     pub fn add_key_package(
         &mut self,
         ciphersuite: Ciphersuite,

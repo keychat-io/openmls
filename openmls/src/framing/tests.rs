@@ -255,7 +255,8 @@ fn wire_format_checks() {
         )
         .expect("Could not decrypt PrivateMessage.");
 
-    // We expect the signature to fail since the original content was signed with a different wire format.
+    // We expect the signature to fail since the original content was signed with a
+    // different wire format.
     let result: Result<AuthenticatedContentIn, SignatureError> =
         verifiable_plaintext.verify(provider.crypto(), &pk);
 

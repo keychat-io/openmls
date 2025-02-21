@@ -323,11 +323,12 @@ fn test_valsem201() {
         ))
     };
 
-    // ExternalInit Proposal cannot be used alone and has to be in an external commit which
-    // always contains a path anyway
+    // ExternalInit Proposal cannot be used alone and has to be in an external
+    // commit which always contains a path anyway
     // TODO: #916 when/if AppAck proposal are implemented (path not required)
-    // TODO: #751 when ReInit proposal validation are implemented (path not required). Currently one
-    // cannot distinguish when the commit has a single ReInit proposal from the commit without proposals
+    // TODO: #751 when ReInit proposal validation are implemented (path not
+    // required). Currently one cannot distinguish when the commit has a single
+    // ReInit proposal from the commit without proposals
     // in [MlsGroup::apply_proposals()]
     let cases = vec![
         (vec![add_proposal()], false),
@@ -613,7 +614,8 @@ fn test_valsem203() {
         .expect("Unexpected error.");
 }
 
-// ValSem204: Public keys from Path must be verified and match the private keys from the direct path
+// ValSem204: Public keys from Path must be verified and match the private keys
+// from the direct path
 #[openmls_test::openmls_test]
 fn test_valsem204() {
     // Test with PublicMessage
@@ -667,7 +669,8 @@ fn test_valsem204() {
     }
     let mut encryption_context = alice_group.export_group_context().clone();
     let post_merge_tree_hash = charlie_group.export_group_context().tree_hash().to_vec();
-    // We want a context, where everything is post-merge except the confirmed transcript hash.
+    // We want a context, where everything is post-merge except the confirmed
+    // transcript hash.
     encryption_context.increment_epoch();
     encryption_context.update_tree_hash(post_merge_tree_hash);
 
@@ -812,7 +815,8 @@ fn test_valsem205() {
         .expect("Unexpected error.");
 }
 
-// this ensures that a member can process commits not containing all the stored proposals
+// this ensures that a member can process commits not containing all the stored
+// proposals
 #[openmls_test::openmls_test]
 fn test_partial_proposal_commit(
     ciphersuite: Ciphersuite,
@@ -866,7 +870,8 @@ fn test_partial_proposal_commit(
         _ => unreachable!(),
     }
 
-    // Alice creates a commit with only a subset of the epoch's proposals. Bob should still be able to process it.
+    // Alice creates a commit with only a subset of the epoch's proposals. Bob
+    // should still be able to process it.
     let remaining_proposal = alice_group
         .proposal_store()
         .proposals()

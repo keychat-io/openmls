@@ -51,8 +51,8 @@ pub use crate::treesync::{
 // PSKs
 // TODO #751
 // pub use crate::schedule::psk::{
-//    BranchPsk, ExternalPsk, PreSharedKeyId, PreSharedKeys, Psk, PskBundle, PskType, ReinitPsk,
-// };
+//    BranchPsk, ExternalPsk, PreSharedKeyId, PreSharedKeys, Psk, PskBundle,
+// PskType, ReinitPsk, };
 
 // TLS codec traits
 pub use tls_codec::{self, *};

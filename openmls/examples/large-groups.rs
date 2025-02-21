@@ -416,7 +416,8 @@ enum SetupVariants {
 
 /// A tool to benchmark openmls (large) groups.
 ///
-/// The benchmarks need to write a setup first that is then read to run the benchmarks.
+/// The benchmarks need to write a setup first that is then read to run the
+/// benchmarks.
 #[derive(Parser)]
 struct Args {
     /// Write out the setup (groups and states)

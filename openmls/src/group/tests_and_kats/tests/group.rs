@@ -107,8 +107,8 @@ fn basic_group_setup() {
 }
 
 /// This test checks that we can't create a group that is invalid.
-/// Specifically, we test that the extensions in the leaf node must be supported by the lead node's
-/// own capabilities ([valn0107]).
+/// Specifically, we test that the extensions in the leaf node must be supported
+/// by the lead node's own capabilities ([valn0107]).
 ///
 /// [valn0107]: https://validation.openmls.tech/#valn0107
 #[openmls_test::openmls_test]

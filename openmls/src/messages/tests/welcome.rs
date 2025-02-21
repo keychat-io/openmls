@@ -23,10 +23,10 @@ use crate::{
     treesync::node::encryption_keys::EncryptionKeyPair,
 };
 
-/// This test detects if the decryption of the encrypted group secrets fails due to a change in
-/// the encrypted group info. As the group info is part of the decryption context of the encrypted
-/// group info, it is not possible to generate a matching encrypted group context with different
-/// parameters.
+/// This test detects if the decryption of the encrypted group secrets fails due
+/// to a change in the encrypted group info. As the group info is part of the
+/// decryption context of the encrypted group info, it is not possible to
+/// generate a matching encrypted group context with different parameters.
 #[openmls_test::openmls_test]
 fn test_welcome_context_mismatch(
     ciphersuite: Ciphersuite,
@@ -146,7 +146,8 @@ fn test_welcome_context_mismatch(
 
     welcome.encrypted_group_info = encrypted_verifiable_group_info.into();
 
-    // Create backup of encryption keypair, s.t. we can process the welcome a second time after failing.
+    // Create backup of encryption keypair, s.t. we can process the welcome a second
+    // time after failing.
     let encryption_keypair = EncryptionKeyPair::from((
         bob_kpb.key_package().leaf_node().encryption_key().clone(),
         bob_kpb.private_encryption_key.clone(),
@@ -298,8 +299,8 @@ fn test_welcome_message(ciphersuite: Ciphersuite, provider: &impl crate::storage
 
 /// Test the parsed welcome flow where the Welcome is first processed to give
 /// the caller the GroupInfo.
-/// This allows transporting information in the Welcome for retrieving the ratchet
-/// tree.
+/// This allows transporting information in the Welcome for retrieving the
+/// ratchet tree.
 #[openmls_test::openmls_test]
 fn test_welcome_processing() {
     let group_id = GroupId::random(provider.rand());

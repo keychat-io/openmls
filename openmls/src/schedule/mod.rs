@@ -1,7 +1,7 @@
 //! # Key schedule
 //!
-//! This module contains the types and implementations for key schedule operations.
-//! It exposes the [`EpochAuthenticator`] & [`ResumptionPskSecret`].
+//! This module contains the types and implementations for key schedule
+//! operations. It exposes the [`EpochAuthenticator`] & [`ResumptionPskSecret`].
 
 // Internal documentation
 //
@@ -149,10 +149,6 @@ use message_secrets::MessageSecrets;
 use openmls_traits::random::OpenMlsRand;
 use psk::PskSecret;
 
-// Tests and kats
-#[cfg(any(feature = "test-utils", test))]
-pub mod tests_and_kats;
-
 // Public types
 pub use psk::{ExternalPsk, PreSharedKeyId, Psk};
 
@@ -296,7 +292,8 @@ impl InitSecret {
         })
     }
 
-    /// Create an `InitSecret` and the corresponding `kem_output` from a group info.
+    /// Create an `InitSecret` and the corresponding `kem_output` from a group
+    /// info.
     pub(crate) fn from_group_context(
         crypto: &impl OpenMlsCrypto,
         group_context: &GroupContext,
@@ -452,7 +449,8 @@ impl KeySchedule {
             return Err(KeyScheduleError::InvalidState(ErrorState::Init));
         }
 
-        // We can return a library error here, because there must be a mistake in the state machine
+        // We can return a library error here, because there must be a mistake in the
+        // state machine
         let intermediate_secret = self
             .intermediate_secret
             .as_ref()
@@ -483,7 +481,8 @@ impl KeySchedule {
         }
         self.state = State::Context;
 
-        // We can return a library error here, because there must be a mistake in the state machine
+        // We can return a library error here, because there must be a mistake in the
+        // state machine
         let intermediate_secret = self
             .intermediate_secret
             .take()
@@ -506,8 +505,8 @@ impl KeySchedule {
     }
 
     /// Derive the epoch secrets.
-    /// If the `with_init_secret` argument is `true`, the init secret is derived and
-    /// part of the `EpochSecrets`. Otherwise not.
+    /// If the `with_init_secret` argument is `true`, the init secret is derived
+    /// and part of the `EpochSecrets`. Otherwise not.
     pub(crate) fn epoch_secrets(
         &mut self,
         crypto: &impl OpenMlsCrypto,
@@ -521,7 +520,8 @@ impl KeySchedule {
 
         let epoch_secret = match self.epoch_secret.take() {
             Some(epoch_secret) => epoch_secret,
-            // We can return a library error here, because there must be a mistake in the state machine
+            // We can return a library error here, because there must be a mistake in the state
+            // machine
             None => return Err(LibraryError::custom("state machine error").into()),
         };
 
@@ -670,7 +670,8 @@ impl EncryptionSecret {
     }
 
     /// Create a `SecretTree` from the `encryption_secret` contained in the
-    /// `EpochSecrets`. The `encryption_secret` is consumed, allowing us to achieve FS.
+    /// `EpochSecrets`. The `encryption_secret` is consumed, allowing us to
+    /// achieve FS.
     pub(crate) fn create_secret_tree(
         self,
         treesize: TreeSize,
@@ -814,7 +815,7 @@ impl ConfirmationKey {
 
     /// Create a new confirmation tag.
     ///
-    /// >  11.2. Commit
+    /// > 11.2. Commit
     ///
     /// ```text
     /// PublicMessage.confirmation_tag =
@@ -1129,8 +1130,8 @@ impl EpochSecrets {
     }
 
     /// Derive `EpochSecrets` from an `EpochSecret`.
-    /// If the `with_init_secret` argument is `true`, the init secret is derived and
-    /// part of the `EpochSecrets`. Otherwise not.
+    /// If the `with_init_secret` argument is `true`, the init secret is derived
+    /// and part of the `EpochSecrets`. Otherwise not.
     fn new(
         crypto: &impl OpenMlsCrypto,
         ciphersuite: Ciphersuite,
@@ -1188,9 +1189,10 @@ impl EpochSecrets {
     }
 
     /// Splits `EpochSecrets` into two different categories:
-    ///  - [`GroupEpochSecrets`]: These secrets are only used within the same epoch
-    ///  - [`MessageSecrets`]: These secrets are potentially also used for past epochs
-    ///    to decrypt and validate messages
+    ///  - [`GroupEpochSecrets`]: These secrets are only used within the same
+    ///    epoch
+    ///  - [`MessageSecrets`]: These secrets are potentially also used for past
+    ///    epochs to decrypt and validate messages
     pub(crate) fn split_secrets(
         self,
         serialized_context: Vec<u8>,

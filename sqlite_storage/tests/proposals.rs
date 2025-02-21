@@ -45,7 +45,8 @@ fn read_write_delete() {
     let proposals = (0..10)
         .map(|i| Proposal(format!("TestProposal{i}").as_bytes().to_vec()))
         .collect::<Vec<_>>();
-    let connection = rusqlite::Connection::open_in_memory().unwrap();
+    // let connection = rusqlite::Connection::open_in_memory().unwrap();
+    let connection = rusqlite::Connection::open("./mls_data.sqlite").unwrap();
     let mut storage =
         openmls_sqlite_storage::SqliteStorageProvider::<JsonCodec, Connection>::new(connection);
 

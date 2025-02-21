@@ -1,7 +1,7 @@
 //! # Messages
 //!
-//! This module contains the types and implementations for Commit & Welcome messages,
-//! as well as Proposals & the group info used for External Commits.
+//! This module contains the types and implementations for Commit & Welcome
+//! messages, as well as Proposals & the group info used for External Commits.
 
 use hash_ref::HashReference;
 use openmls_traits::{
@@ -96,7 +96,8 @@ impl Welcome {
         self.cipher_suite
     }
 
-    /// Returns a reference to the encrypted group secrets in this Welcome message.
+    /// Returns a reference to the encrypted group secrets in this Welcome
+    /// message.
     pub fn secrets(&self) -> &[EncryptedGroupSecrets] {
         self.secrets.as_slice()
     }
@@ -115,7 +116,8 @@ impl Welcome {
 
 /// EncryptedGroupSecrets
 ///
-/// This is part of a [`Welcome`] message. It can be used to correlate the correct secrets with each new member.
+/// This is part of a [`Welcome`] message. It can be used to correlate the
+/// correct secrets with each new member.
 #[derive(
     Clone, Debug, Eq, PartialEq, TlsDeserialize, TlsDeserializeBytes, TlsSerialize, TlsSize,
 )]
@@ -140,7 +142,8 @@ impl EncryptedGroupSecrets {
         self.new_member.clone()
     }
 
-    /// Returns a reference to the encrypted group secrets' encrypted group secrets.
+    /// Returns a reference to the encrypted group secrets' encrypted group
+    /// secrets.
     pub(crate) fn encrypted_group_secrets(&self) -> &HpkeCiphertext {
         &self.encrypted_group_secrets
     }
@@ -377,7 +380,8 @@ impl PathSecret {
         self.path_secret
     }
 
-    /// Decrypt a given `HpkeCiphertext` using the `private_key` and `group_context`.
+    /// Decrypt a given `HpkeCiphertext` using the `private_key` and
+    /// `group_context`.
     ///
     /// Returns the decrypted `PathSecret`. Returns an error if the decryption
     /// was unsuccessful.

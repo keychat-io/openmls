@@ -1,4 +1,5 @@
-//! This module tests the classification of remove operations with RemoveOperation
+//! This module tests the classification of remove operations with
+//! RemoveOperation
 
 use crate::group::tests_and_kats::utils::{generate_credential_with_key, generate_key_package};
 use crate::{framing::*, group::*};
@@ -115,8 +116,8 @@ fn remove_blank() {
         )
         .expect_err("using API to re-remove someone should fail");
 
-    // TODO: craft another remove commit that removes bob's (blank) index and check that merging
-    //       that fails
+    // TODO: craft another remove commit that removes bob's (blank) index and
+    // check that merging       that fails
 }
 
 // Tests the different variants of the RemoveOperation enum.

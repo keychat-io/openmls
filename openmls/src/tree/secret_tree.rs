@@ -31,7 +31,8 @@ pub enum SecretTreeError {
     /// The requested secret was deleted to preserve forward secrecy.
     #[error("The requested secret was deleted to preserve forward secrecy.")]
     SecretReuseError,
-    /// Cannot create decryption secrets from own sender ratchet or encryption secrets from the sender ratchets of other members.
+    /// Cannot create decryption secrets from own sender ratchet or encryption
+    /// secrets from the sender ratchets of other members.
     #[error("Cannot create decryption secrets from own sender ratchet or encryption secrets from the sender ratchets of other members.")]
     RatchetTypeError,
     /// Ratchet generation has reached `u32::MAX`.

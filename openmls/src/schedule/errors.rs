@@ -98,7 +98,8 @@ pub enum KsTestVectorError {
     /// The group context doesn't match the one in the test vector.
     #[error("The group context doesn't match the one in the test vector.")]
     GroupContextMismatch,
-    /// The computed sender data secret doesn't match the one in the test vector.
+    /// The computed sender data secret doesn't match the one in the test
+    /// vector.
     #[error("The computed sender data secret doesn't match the one in the test vector.")]
     SenderDataSecretMismatch,
     /// The computed encryption secret doesn't match the one in the test vector.
@@ -107,7 +108,8 @@ pub enum KsTestVectorError {
     /// The computed exporter secret doesn't match the one in the test vector.
     #[error("The computed exporter secret doesn't match the one in the test vector.")]
     ExporterSecretMismatch,
-    /// The computed epoch authenticator doesn't match the one in the test vector.
+    /// The computed epoch authenticator doesn't match the one in the test
+    /// vector.
     #[error("The computed epoch authenticator doesn't match the one in the test vector.")]
     EpochAuthenticatorMismatch,
     /// The computed external secret doesn't match the one in the test vector.
@@ -122,7 +124,8 @@ pub enum KsTestVectorError {
     /// The computed resumption psk doesn't match the one in the test vector.
     #[error("The computed resumption psk doesn't match the one in the test vector.")]
     ResumptionPskMismatch,
-    /// The computed external public key doesn't match the one in the test vector.
+    /// The computed external public key doesn't match the one in the test
+    /// vector.
     #[error("The computed external public key doesn't match the one in the test vector.")]
     ExternalPubMismatch,
     /// The computed exporter secret doesn't match the on ein the test vector.

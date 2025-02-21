@@ -6,6 +6,7 @@ members = [
   "libcrux_crypto",
   "fuzz",
   "cli",
+  "kc",
   "interop_client",
   "memory_storage",
   "sqlite_storage",

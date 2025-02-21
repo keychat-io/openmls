@@ -3,18 +3,19 @@
 //! A [`Credential`] contains identifying information about the client that
 //! created it. [`Credential`]s represent clients in MLS groups and are
 //! used to authenticate their messages. Each
-//! [`KeyPackage`](crate::key_packages::KeyPackage) as well as each client (leaf node)
-//! in the group (tree) contains a [`Credential`] and is authenticated.
+//! [`KeyPackage`](crate::key_packages::KeyPackage) as well as each client (leaf
+//! node) in the group (tree) contains a [`Credential`] and is authenticated.
 //! The [`Credential`] must the be checked by an authentication server and the
 //! application, which is out of scope of MLS.
 //!
 //! Clients can create a [`Credential`].
 //!
-//! The MLS protocol spec allows the [`Credential`] that represents a client in a group to
-//! change over time. Concretely, members can issue an Update proposal or a Full
-//! Commit to update their [`LeafNode`](crate::treesync::LeafNode), as
-//! well as the [`Credential`] in it. The Update has to be authenticated by the
-//! signature public key corresponding to the old [`Credential`].
+//! The MLS protocol spec allows the [`Credential`] that represents a client in
+//! a group to change over time. Concretely, members can issue an Update
+//! proposal or a Full Commit to update their
+//! [`LeafNode`](crate::treesync::LeafNode), as well as the [`Credential`] in
+//! it. The Update has to be authenticated by the signature public key
+//! corresponding to the old [`Credential`].
 //!
 //! When receiving a credential update from another member, applications must
 //! query the Authentication Service to ensure that the new credential is valid.
@@ -166,9 +167,9 @@ pub struct Certificate {
 /// This struct contains MLS credential data, where the data depends on the
 /// type.
 ///
-/// **Note:** While the credential is opaque to OpenMLS, the library must know how
-///           to deserialize it. The implementation only works with credentials
-///           that are encoded as variable-sized vectors.
+/// **Note:** While the credential is opaque to OpenMLS, the library must know
+/// how           to deserialize it. The implementation only works with
+/// credentials           that are encoded as variable-sized vectors.
 ///           Other credentials will cause OpenMLS either to crash or exhibit
 ///           unexpected behaviour.
 ///

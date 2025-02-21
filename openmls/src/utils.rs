@@ -4,17 +4,17 @@
 use rand::{rngs::OsRng, RngCore};
 
 #[cfg(any(feature = "test-utils", test))]
-pub fn random_u32() -> u32 {
+pub fn _random_u32() -> u32 {
     OsRng.next_u32()
 }
 
 #[cfg(any(feature = "test-utils", test))]
-pub fn random_u64() -> u64 {
+pub fn _random_u64() -> u64 {
     OsRng.next_u64()
 }
 
 #[cfg(any(feature = "test-utils", test))]
-pub fn random_u8() -> u8 {
+pub fn _random_u8() -> u8 {
     let mut b = [0u8; 1];
     OsRng.fill_bytes(&mut b);
     b[0]
@@ -31,7 +31,8 @@ macro_rules! log_crypto {
     })
 }
 
-// With the content-debug feature enabled sensitive message content parts can be logged.
+// With the content-debug feature enabled sensitive message content parts can be
+// logged.
 #[cfg(feature = "content-debug")]
 macro_rules! log_content {
     (debug, $($arg:tt)*) => ({

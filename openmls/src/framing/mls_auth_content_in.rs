@@ -3,9 +3,10 @@
 //! This module contains structs and implementation that pertain to content
 //! authentication in MLS. Besides structs that directly represent structs in
 //! the MLS specification, this module also contains
-//! [`VerifiableAuthenticatedContentIn`], a wrapper struct which ensures that the
-//! signatures are verified before the content of an MLS [`PrivateMessageIn`] or
-//! [`PublicMessageIn`] can be accessed by processing functions of OpenMLS.
+//! [`VerifiableAuthenticatedContentIn`], a wrapper struct which ensures that
+//! the signatures are verified before the content of an MLS
+//! [`PrivateMessageIn`] or [`PublicMessageIn`] can be accessed by processing
+//! functions of OpenMLS.
 
 use std::io::Read;
 
@@ -67,13 +68,14 @@ impl AuthenticatedContentIn {
 #[cfg(any(feature = "test-utils", test))]
 impl AuthenticatedContentIn {
     /// Get the content body of the message.
-    pub(crate) fn content(&self) -> &FramedContentBodyIn {
+    pub(crate) fn _content(&self) -> &FramedContentBodyIn {
         &self.content.body
     }
 }
 
-/// Note: we can't `derive(tls_codec::Deserialize)` because [`FramedContentAuthData`] cannot
-///       implement the usual `tls_codec::Deserialize` as it requires the content type as parameter.
+/// Note: we can't `derive(tls_codec::Deserialize)` because
+/// [`FramedContentAuthData`] cannot       implement the usual
+/// `tls_codec::Deserialize` as it requires the content type as parameter.
 impl tls_codec::Deserialize for AuthenticatedContentIn {
     fn tls_deserialize<R: Read>(bytes: &mut R) -> Result<Self, Error>
     where
@@ -103,8 +105,8 @@ impl From<VerifiableAuthenticatedContentIn> for AuthenticatedContentIn {
     }
 }
 
-/// Wrapper struct around [`AuthenticatedContent`] to enforce signature verification
-/// before content can be accessed.
+/// Wrapper struct around [`AuthenticatedContent`] to enforce signature
+/// verification before content can be accessed.
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) struct VerifiableAuthenticatedContentIn {
     tbs: FramedContentTbsIn,
@@ -112,8 +114,8 @@ pub(crate) struct VerifiableAuthenticatedContentIn {
 }
 
 impl VerifiableAuthenticatedContentIn {
-    /// Create a new [`VerifiableAuthenticatedContentIn`] from a [`FramedContentTbsIn`] and
-    /// a [`Signature`].
+    /// Create a new [`VerifiableAuthenticatedContentIn`] from a
+    /// [`FramedContentTbsIn`] and a [`Signature`].
     pub(crate) fn new(
         wire_format: WireFormat,
         content: FramedContentIn,

@@ -11,10 +11,13 @@
 //! the following transitions.
 //!
 //! * the signer creates an instance of a struct that implements [`Signable`]
-//! * the signer signs it, consuming the [`Signable`] struct and producing a [`SignedStruct`]
+//! * the signer signs it, consuming the [`Signable`] struct and producing a
+//!   [`SignedStruct`]
 //! * the signer serializes the struct and sends it to the verifier
-//! * the verifier deserializes the byte-string into a struct implementing [`Verifiable`]
-//! * the verifier verifies the struct, consuming the [`Verifiable`] struct and producing a [`VerifiedStruct`]
+//! * the verifier deserializes the byte-string into a struct implementing
+//!   [`Verifiable`]
+//! * the verifier verifies the struct, consuming the [`Verifiable`] struct and
+//!   producing a [`VerifiedStruct`]
 //!
 //! Using this process, we can ensure that only structs implementing
 //! [`SignedStruct`] are sent over the wire and only structs implementing
@@ -98,15 +101,16 @@ pub trait VerifiedStruct {}
 /// The verifiable trait must be implemented by any struct that is signed with
 /// a credential. The actual `verify` method is provided.
 /// The `unsigned_payload` and `signature` functions have to be implemented for
-/// each struct, returning the serialized payload and the signature respectively.
+/// each struct, returning the serialized payload and the signature
+/// respectively.
 ///
 /// Note that `Verifiable` should not be implemented on the same struct as
 /// `Signable`. If this appears to be necessary, it is probably a sign that the
 /// struct implementing them aren't well defined. Not that both traits define an
 /// `unsigned_payload` function.
 pub trait Verifiable: Sized {
-    /// The type used for representing the verified data. Must implement the marker trait
-    /// [`VerifiedStruct`].
+    /// The type used for representing the verified data. Must implement the
+    /// marker trait [`VerifiedStruct`].
     type VerifiedStruct: VerifiedStruct;
 
     /// Return the unsigned, serialized payload that should be verified.
@@ -119,9 +123,9 @@ pub trait Verifiable: Sized {
     fn label(&self) -> &str;
 
     /// Verifies the payload against the given `credential`.
-    /// Usually this is implemented by first checking that `self.verify_no_out()`
-    /// does not return an error, and then converting the value into
-    /// `Self::VerifiedStruct`.
+    /// Usually this is implemented by first checking that
+    /// `self.verify_no_out()` does not return an error, and then converting
+    /// the value into `Self::VerifiedStruct`.
     ///
     /// Returns `Ok(Self::VerifiedOutput)` if the signature is valid and
     /// `CredentialError::InvalidSignature` otherwise.
@@ -132,8 +136,8 @@ pub trait Verifiable: Sized {
     ) -> Result<Self::VerifiedStruct, SignatureError>;
 
     /// Verifies the payload against the given public key.
-    /// The signature is fetched via the [`Verifiable::signature()`] function and
-    /// the payload via [`Verifiable::unsigned_payload()`].
+    /// The signature is fetched via the [`Verifiable::signature()`] function
+    /// and the payload via [`Verifiable::unsigned_payload()`].
     ///
     /// Returns `Ok(())` if the signature is valid and
     /// [`SignatureError::VerificationError`] otherwise.

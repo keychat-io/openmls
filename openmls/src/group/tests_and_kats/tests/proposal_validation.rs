@@ -37,7 +37,8 @@ use crate::{
     versions::ProtocolVersion,
 };
 
-/// Helper function to generate and output CredentialWithKeyAndSigner and KeyPackage
+/// Helper function to generate and output CredentialWithKeyAndSigner and
+/// KeyPackage
 fn generate_credential_with_key_and_key_package(
     identity: Vec<u8>,
     ciphersuite: Ciphersuite,
@@ -234,7 +235,8 @@ enum KeyUniqueness {
     PositiveDifferentKey,
     /// Negative Case: the proposals have the same key.
     NegativeSameKey,
-    /// Positive Case: the proposals have the same key but it has remove so its valid
+    /// Positive Case: the proposals have the same key but it has remove so its
+    /// valid
     PositiveSameKeyWithRemove,
 }
 
@@ -713,7 +715,8 @@ fn test_valsem101b() {
         }
     }
 
-    // TODO #1187: This part of the test needs to be adapted to the new parent hashes.
+    // TODO #1187: This part of the test needs to be adapted to the new parent
+    // hashes.
     /* for alice_and_bob_share_keys in [
         KeyUniqueness::NegativeSameKey,
         KeyUniqueness::PositiveSameKeyWithRemove,
@@ -1184,7 +1187,8 @@ fn test_valsem105() {
                 .clear_pending_commit(provider.storage())
                 .unwrap();
         }
-        // Now we create a valid commit and add the proposal afterwards. Once by value, once by reference.
+        // Now we create a valid commit and add the proposal afterwards. Once by value,
+        // once by reference.
         alice_group
             .clear_pending_proposals(provider.storage())
             .unwrap();
@@ -1388,7 +1392,8 @@ fn test_valsem105() {
 /// Removed member must be unique among proposals
 #[openmls_test::openmls_test]
 fn test_valsem107() {
-    // Helper function to unwrap a commit with a single proposal from an mls message.
+    // Helper function to unwrap a commit with a single proposal from an mls
+    // message.
     fn unwrap_specific_commit(commit_ref_remove: MlsMessageOut) -> Commit {
         let serialized_message = commit_ref_remove.tls_serialize_detached().unwrap();
 
@@ -1565,7 +1570,8 @@ fn test_valsem108() {
     let _ = alice_group
         .commit_to_pending_proposals(provider, &alice_credential_with_key_and_signer.signer)
         .expect("No error while committing empty proposals");
-    // FIXME: #1098 This shouldn't be necessary. Something is broken in the state logic.
+    // FIXME: #1098 This shouldn't be necessary. Something is broken in the state
+    // logic.
     alice_group
         .clear_pending_commit(provider.storage())
         .unwrap();
@@ -2282,7 +2288,8 @@ fn test_valsem401_valsem402() {
     let alice_provider = Provider::default();
     let bob_provider = Provider::default();
 
-    // TODO(#1354): This is currently not tested because we can't easily create invalid commits.
+    // TODO(#1354): This is currently not tested because we can't easily create
+    // invalid commits.
     let bad_psks: [(Vec<PreSharedKeyId>, ProcessMessageError); 0] = [
         // // ValSem401
         // (

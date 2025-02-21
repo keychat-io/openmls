@@ -205,8 +205,8 @@ impl KeyPackageIn {
         Ok(key_package)
     }
 
-    /// Returns true if the protocol version is supported by this key package and
-    /// false otherwise.
+    /// Returns true if the protocol version is supported by this key package
+    /// and false otherwise.
     pub(crate) fn version_is_supported(&self, protocol_version: ProtocolVersion) -> bool {
         self.payload.protocol_version == protocol_version
     }

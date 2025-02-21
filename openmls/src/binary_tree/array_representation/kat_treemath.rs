@@ -33,9 +33,6 @@
 //! * `sibling[i]` is the node index of the sibling of the node with index `i`
 //!   in a tree with `n_leaves` leaves
 
-#[cfg(test)]
-use crate::test_utils::*;
-
 use super::treemath::*;
 
 use serde::{self, Deserialize, Serialize};
@@ -182,17 +179,6 @@ pub fn run_test_vector(test_vector: TreeMathTestVector) -> Result<(), TmTestVect
         }
     }
     Ok(())
-}
-
-#[test]
-fn read_test_vectors_tm() {
-    let tests: Vec<TreeMathTestVector> = read_json!("../../../test_vectors/tree-math.json");
-    for test_vector in tests {
-        match run_test_vector(test_vector) {
-            Ok(_) => {}
-            Err(e) => panic!("Error while checking tree math test vector.\n{e:?}"),
-        }
-    }
 }
 
 #[cfg(any(feature = "test-utils", test))]

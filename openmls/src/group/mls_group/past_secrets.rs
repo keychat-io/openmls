@@ -14,8 +14,8 @@ struct EpochTree {
     leaves: Vec<Member>,
 }
 
-/// Can store message secrets for up to `max_epochs`. The trees are added with [`self::add()`] and can be queried
-/// with [`Self::get_epoch()`].
+/// Can store message secrets for up to `max_epochs`. The trees are added with
+/// [`self::add()`] and can be queried with [`Self::get_epoch()`].
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "test-utils"), derive(Clone, PartialEq))]
 #[cfg_attr(feature = "crypto-debug", derive(Debug))]
@@ -40,8 +40,9 @@ impl core::fmt::Debug for MessageSecretsStore {
 }
 
 impl MessageSecretsStore {
-    /// Create a new store that can hold up to `max_past_epochs` message secrets.
-    /// If `max_past_epochs` is 0, only the current epoch is being stored.
+    /// Create a new store that can hold up to `max_past_epochs` message
+    /// secrets. If `max_past_epochs` is 0, only the current epoch is being
+    /// stored.
     pub(crate) fn new_with_secret(max_epochs: usize, message_secrets: MessageSecrets) -> Self {
         Self {
             max_epochs,
@@ -91,8 +92,9 @@ impl MessageSecretsStore {
         );
     }
 
-    /// Get a mutable reference to a secret tree for a given epoch `group_epoch`.
-    /// If no message secrets are found for that epoch, `None` is returned.
+    /// Get a mutable reference to a secret tree for a given epoch
+    /// `group_epoch`. If no message secrets are found for that epoch,
+    /// `None` is returned.
     pub(crate) fn secrets_for_epoch_mut(
         &mut self,
         group_epoch: impl Into<GroupEpoch>,
@@ -121,9 +123,9 @@ impl MessageSecretsStore {
         None
     }
 
-    /// Get a mutable reference to a secret tree for a given epoch `group_epoch`.
-    /// Return a mutable reference to the [`MessageSecrets`] and a slice to the
-    /// [`Member`]s of the epoch.
+    /// Get a mutable reference to a secret tree for a given epoch
+    /// `group_epoch`. Return a mutable reference to the [`MessageSecrets`]
+    /// and a slice to the [`Member`]s of the epoch.
     pub(crate) fn secrets_and_leaves_for_epoch_mut(
         &mut self,
         group_epoch: impl Into<GroupEpoch>,

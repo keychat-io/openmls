@@ -73,9 +73,9 @@ struct TestState<Provider> {
     bob: MemberState<Provider>,
 }
 
-/// Sets up a group with two parties Alice and Bob, where Alice has capabilities for unknown
-/// extensions 0xf001 and  0xf002, and Bob has capabilities for extension 0xf001, 0xf002 and
-/// 0xf003.
+/// Sets up a group with two parties Alice and Bob, where Alice has capabilities
+/// for unknown extensions 0xf001 and  0xf002, and Bob has capabilities for
+/// extension 0xf001, 0xf002 and 0xf003.
 fn setup<Provider: crate::storage::OpenMlsProvider + Default>(
     ciphersuite: Ciphersuite,
 ) -> TestState<Provider> {
@@ -179,7 +179,8 @@ impl<Provider: crate::storage::OpenMlsProvider> MemberState<Provider> {
             .unwrap_or_else(|err| panic!("failed to propose member at {}: {err}", self.party.name))
     }
 
-    /// Wrapper around [`MlsGroup::process_message`], asserting it's a commit and [`MlsGroup::merge_staged_commit`].
+    /// Wrapper around [`MlsGroup::process_message`], asserting it's a commit
+    /// and [`MlsGroup::merge_staged_commit`].
     fn process_and_merge_commit(&mut self, msg: MlsMessageIn) {
         let msg = msg.into_protocol_message().unwrap();
 
@@ -205,7 +206,8 @@ impl<Provider: crate::storage::OpenMlsProvider> MemberState<Provider> {
         }
     }
 
-    /// Wrapper around [`MlsGroup::process_message`], asserting it's a proposal and [`MlsGroup::store_pending_proposal`].
+    /// Wrapper around [`MlsGroup::process_message`], asserting it's a proposal
+    /// and [`MlsGroup::store_pending_proposal`].
     fn process_and_store_proposal(&mut self, msg: MlsMessageIn) -> ProposalRef {
         let msg = msg.into_protocol_message().unwrap();
 
@@ -235,7 +237,8 @@ impl<Provider: crate::storage::OpenMlsProvider> MemberState<Provider> {
         }
     }
 
-    /// This wrapper that expects [`MlsGroup::process_message`] to return an error.
+    /// This wrapper that expects [`MlsGroup::process_message`] to return an
+    /// error.
     fn fail_processing(&mut self, msg: MlsMessageIn) -> ProcessMessageError {
         let msg = msg.into_protocol_message().unwrap();
         let err_msg = format!(
@@ -269,7 +272,8 @@ impl<Provider: crate::storage::OpenMlsProvider> MemberState<Provider> {
             .unwrap_or_else(|err| panic!("{} couldn't merge commit: {err}", self.party.name));
     }
 
-    /// Wrapper around [`MlsGroup::commit_to_pending_proposals`] and [`MlsGroup::merge_pending_commit`].
+    /// Wrapper around [`MlsGroup::commit_to_pending_proposals`] and
+    /// [`MlsGroup::merge_pending_commit`].
     fn commit_and_merge_pending(
         &mut self,
     ) -> (MlsMessageOut, Option<MlsMessageOut>, Option<GroupInfo>) {
@@ -331,8 +335,8 @@ fn self_update_happy_case() {
     bob.process_and_merge_commit(commit.into())
 }
 
-/// This test does the same as self_update_happy_case, but does not use MemberState, so we can
-/// can exactly see which calls to OpenMLS are done
+/// This test does the same as self_update_happy_case, but does not use
+/// MemberState, so we can can exactly see which calls to OpenMLS are done
 #[openmls_test]
 fn self_update_happy_case_simple() {
     let alice_party = PartyState::<Provider>::generate("alice", ciphersuite);
@@ -521,9 +525,10 @@ fn fail_insufficient_extensiontype_capabilities_add_valn103() {
     )
     .unwrap();
 
-    // Note: If this starts failing, the order in which validation is checked may have changed and we
-    // fail on the fact that the confirmation tag is wrong. in that case, either the check has to be
-    // disabled, or the frankenstein framework needs code to properly compute it.
+    // Note: If this starts failing, the order in which validation is checked may
+    // have changed and we fail on the fact that the confirmation tag is wrong.
+    // in that case, either the check has to be disabled, or the frankenstein
+    // framework needs code to properly compute it.
     let err = bob.fail_processing(fake_commit);
     assert!(
         matches!(
@@ -543,13 +548,13 @@ fn fail_insufficient_extensiontype_capabilities_add_valn103() {
 //   - This is part of the setup function
 // - alice proposal GCE with required capabilities and commits
 // - bob adds the proposal and merges the commit
-// - bob proposes a self-update, but we tamper with it by removing
-//   an extension type from the capabilities. This makes it invalid.
+// - bob proposes a self-update, but we tamper with it by removing an extension
+//   type from the capabilities. This makes it invalid.
 // - we craft a commit by alice, committing the invalid proposal
-//   - it can't be done by bob, because the sender of a commit
-//     containing an update proposal can not be the owner of the
-//     leaf node
-// - bob processes the invalid commit, which should give an InsufficientCapabilities error
+//   - it can't be done by bob, because the sender of a commit containing an
+//     update proposal can not be the owner of the leaf node
+// - bob processes the invalid commit, which should give an
+//   InsufficientCapabilities error
 #[openmls_test]
 fn fail_insufficient_extensiontype_capabilities_update_valn103() {
     let TestState { mut alice, mut bob } = setup::<Provider>(ciphersuite);
@@ -591,7 +596,8 @@ fn fail_insufficient_extensiontype_capabilities_update_valn103() {
         unreachable!()
     };
 
-    // we want to change the leaf node in the update proposal, so let's get a mutable borrow on that
+    // we want to change the leaf node in the update proposal, so let's get a
+    // mutable borrow on that
     let frankenstein::FrankenFramedContent {
         body:
             frankenstein::FrankenFramedContentBody::Proposal(frankenstein::FrankenProposal::Update(
@@ -605,8 +611,8 @@ fn fail_insufficient_extensiontype_capabilities_update_valn103() {
         unreachable!();
     };
 
-    // Remove the extension type from the capabilities that is part of required capabilities
-    // Committing this would be illegal
+    // Remove the extension type from the capabilities that is part of required
+    // capabilities Committing this would be illegal
     assert_eq!(
         bob_franken_leaf_node.capabilities.extensions.remove(1),
         0xf002
@@ -658,7 +664,8 @@ fn fail_insufficient_extensiontype_capabilities_update_valn103() {
     let proposal_ref = bob.process_and_store_proposal(fake_proposal);
     let alice_sender = frankenstein::FrankenSender::Member(0);
 
-    // This is a commit, claimed to be from alice, that commits to the proposal ref of the invalid proposal
+    // This is a commit, claimed to be from alice, that commits to the proposal ref
+    // of the invalid proposal
     let commit_content = frankenstein::FrankenFramedContent {
         sender: alice_sender,
         body: frankenstein::FrankenFramedContentBody::Commit(frankenstein::FrankenCommit {
@@ -695,13 +702,14 @@ fn fail_insufficient_extensiontype_capabilities_update_valn103() {
     )
     .unwrap();
 
-    // when bob processes the commit, it should fail because the leaf node's capabilties do not
-    // satisfy those required by the group.
+    // when bob processes the commit, it should fail because the leaf node's
+    // capabilties do not satisfy those required by the group.
     let err = bob.fail_processing(fake_commit);
 
-    // Note: If this starts failing, the order in which validation is checked may have changed and we
-    // fail on the fact that the confirmation tag is wrong. in that case, either the check has to be
-    // disabled, or the frankenstein framework yet yet needs code to properly commpute it.
+    // Note: If this starts failing, the order in which validation is checked may
+    // have changed and we fail on the fact that the confirmation tag is wrong.
+    // in that case, either the check has to be disabled, or the frankenstein
+    // framework yet yet needs code to properly commpute it.
     assert!(
         matches!(
             err,
@@ -713,8 +721,8 @@ fn fail_insufficient_extensiontype_capabilities_update_valn103() {
     );
 }
 
-// This test doesn't belong here, but it's nice to have. It would be nice to factor it out, but
-// it relies on the testing functions.
+// This test doesn't belong here, but it's nice to have. It would be nice to
+// factor it out, but it relies on the testing functions.
 //
 // I suppose we need to talk about which test framework is the one we need.
 // See https://github.com/openmls/openmls/issues/1618.
@@ -820,7 +828,8 @@ fn fail_key_package_version_valn201() {
     ));
 }
 
-// This tests that a commit containing more than one GCE Proposals does not pass validation.
+// This tests that a commit containing more than one GCE Proposals does not pass
+// validation.
 #[openmls_test]
 fn fail_2_gce_proposals_1_commit_valn308() {
     let TestState { mut alice, mut bob } = setup::<Provider>(ciphersuite);
@@ -850,9 +859,10 @@ fn fail_2_gce_proposals_1_commit_valn308() {
     )
     .unwrap();
 
-    // Craft a commit that has two GroupContextExtension proposals. This is forbidden by the RFC.
-    // Change the commit before alice commits, so alice's state is still in the old epoch and we can
-    // use her state to forge the macs and signatures
+    // Craft a commit that has two GroupContextExtension proposals. This is
+    // forbidden by the RFC. Change the commit before alice commits, so alice's
+    // state is still in the old epoch and we can use her state to forge the
+    // macs and signatures
     match &mut franken_commit.body {
         frankenstein::FrankenMlsMessageBody::PublicMessage(msg) => {
             match &mut msg.content.body {
@@ -915,9 +925,9 @@ fn fail_2_gce_proposals_1_commit_valn308() {
     ));
 }
 
-/// This test makes sure that a commit to a GCE proposal with required_capabilities that are
-/// not satisfied by all members' capabilities does not pass validation.
-///
+/// This test makes sure that a commit to a GCE proposal with
+/// required_capabilities that are not satisfied by all members' capabilities
+/// does not pass validation.
 // Test structure:
 // - (alice creates group, adds bob, bob accepts)
 //   - This is part of the setup function
@@ -925,8 +935,7 @@ fn fail_2_gce_proposals_1_commit_valn308() {
 //   - both alice and bob support this extension
 // - we modify the proposal and add 0xf003 - this is only supported by bob (see setup function)
 // - we craft a commit to the proposal, signed by bob
-// - alice processes the commit expecting an error, and the error should be that the GCE is
-//   invalid
+// - alice processes the commit expecting an error, and the error should be that the GCE is invalid
 #[openmls_test]
 fn fail_unsupported_gces_add_valn1001() {
     let TestState { mut alice, mut bob }: TestState<Provider> = setup(ciphersuite);
@@ -1117,8 +1126,8 @@ fn proposal() {
             "expected error when committing to multiple group context extensions proposals",
         );
 
-    // === can't update required required_capabilities to extensions that existing group members
-    //       are not capable of
+    // === can't update required required_capabilities to extensions that existing
+    // group members       are not capable of
 
     // contains unsupported extension
     let new_extensions = Extensions::single(Extension::RequiredCapabilities(

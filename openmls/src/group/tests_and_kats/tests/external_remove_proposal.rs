@@ -161,7 +161,8 @@ fn external_remove_proposal_should_remove_member() {
         .unwrap();
     alice_group.merge_pending_commit(provider).unwrap();
 
-    // Trying to do an external remove proposal of Bob now should fail as he no longer is in the group
+    // Trying to do an external remove proposal of Bob now should fail as he no
+    // longer is in the group
     let invalid_bob_external_remove_proposal: MlsMessageIn =
         ExternalProposal::new_remove::<Provider>(
             // Bob is no longer in the group
@@ -342,7 +343,8 @@ fn external_remove_proposal_should_fail_when_no_external_senders() {
         .find(|member| member.credential.serialized_content() == b"Bob")
         .map(|member| member.index)
         .unwrap();
-    // Now Delivery Service wants to remove Bob with invalid sender index but there's no extension
+    // Now Delivery Service wants to remove Bob with invalid sender index but
+    // there's no extension
     let bob_external_remove_proposal: MlsMessageIn = ExternalProposal::new_remove::<Provider>(
         bob_index,
         alice_group.group_id().clone(),

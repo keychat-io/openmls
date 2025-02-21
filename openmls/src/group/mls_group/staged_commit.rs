@@ -121,19 +121,19 @@ impl MlsGroup {
     ///  - ValSem111
     ///  - ValSem112
     ///  - ValSem113: All Proposals: The proposal type must be supported by all
-    ///               members of the group
+    ///    members of the group
     ///  - ValSem200
     ///  - ValSem201
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241
     ///  - ValSem242
     ///  - ValSem244 Returns an error if the given commit was sent by the owner
-    ///              of this group.
+    ///    of this group.
     pub(crate) fn stage_commit(
         &self,
         mls_content: &AuthenticatedContent,
@@ -199,7 +199,8 @@ impl MlsGroup {
                     .collect();
 
                 // ValSem203: Path secrets must decrypt correctly
-                // ValSem204: Public keys from Path must be verified and match the private keys from the direct path
+                // ValSem204: Public keys from Path must be verified and match the private keys
+                // from the direct path
                 let (new_keypairs, commit_secret) = diff.decrypt_path(
                     provider.crypto(),
                     &decryption_keypairs,
@@ -322,8 +323,9 @@ impl MlsGroup {
         Ok(StagedCommit::new(proposal_queue, staged_commit_state))
     }
 
-    /// Merges a [StagedCommit] into the group state and optionally return a [`SecretTree`]
-    /// from the previous epoch. The secret tree is returned if the Commit does not contain a self removal.
+    /// Merges a [StagedCommit] into the group state and optionally return a
+    /// [`SecretTree`] from the previous epoch. The secret tree is returned
+    /// if the Commit does not contain a self removal.
     ///
     /// This function should not fail and only returns a [`Result`], because it
     /// might throw a `LibraryError`.
@@ -350,11 +352,12 @@ impl MlsGroup {
                 let past_epoch = self.context().epoch();
                 // Get all the full leaves
                 let leaves = self.public_group().members().collect();
-                // Merge the staged commit into the group state and store the secret tree from the
-                // previous epoch in the message secrets store.
+                // Merge the staged commit into the group state and store the secret tree from
+                // the previous epoch in the message secrets store.
                 self.group_epoch_secrets = state.group_epoch_secrets;
 
-                // Replace the previous message secrets with the new ones and return the previous message secrets
+                // Replace the previous message secrets with the new ones and return the
+                // previous message secrets
                 let mut message_secrets = state.message_secrets;
                 mem::swap(
                     &mut message_secrets,
@@ -379,7 +382,8 @@ impl MlsGroup {
                 let new_owned_encryption_keys = self
                     .public_group()
                     .owned_encryption_keys(self.own_leaf_index());
-                // From the old and new keys, keep the ones that are still relevant in the new epoch.
+                // From the old and new keys, keep the ones that are still relevant in the new
+                // epoch.
                 let epoch_keypairs: Vec<EncryptionKeyPair> = old_epoch_keypairs
                     .into_iter()
                     .chain(state.new_keypairs)
@@ -460,22 +464,26 @@ impl StagedCommit {
         }
     }
 
-    /// Returns the Add proposals that are covered by the Commit message as in iterator over [QueuedAddProposal].
+    /// Returns the Add proposals that are covered by the Commit message as in
+    /// iterator over [QueuedAddProposal].
     pub fn add_proposals(&self) -> impl Iterator<Item = QueuedAddProposal> {
         self.staged_proposal_queue.add_proposals()
     }
 
-    /// Returns the Remove proposals that are covered by the Commit message as in iterator over [QueuedRemoveProposal].
+    /// Returns the Remove proposals that are covered by the Commit message as
+    /// in iterator over [QueuedRemoveProposal].
     pub fn remove_proposals(&self) -> impl Iterator<Item = QueuedRemoveProposal> {
         self.staged_proposal_queue.remove_proposals()
     }
 
-    /// Returns the Update proposals that are covered by the Commit message as in iterator over [QueuedUpdateProposal].
+    /// Returns the Update proposals that are covered by the Commit message as
+    /// in iterator over [QueuedUpdateProposal].
     pub fn update_proposals(&self) -> impl Iterator<Item = QueuedUpdateProposal> {
         self.staged_proposal_queue.update_proposals()
     }
 
-    /// Returns the PresharedKey proposals that are covered by the Commit message as in iterator over [QueuedPskProposal].
+    /// Returns the PresharedKey proposals that are covered by the Commit
+    /// message as in iterator over [QueuedPskProposal].
     pub fn psk_proposals(&self) -> impl Iterator<Item = QueuedPskProposal> {
         self.staged_proposal_queue.psk_proposals()
     }
@@ -532,8 +540,9 @@ impl StagedCommit {
                                 .into_iter()
                             })
                             // TODO: ideally we wouldn't collect in between here, but the match arms
-                            //       have to all return the same type. We solve this by having them all
-                            //       be vec::IntoIter, but it would be nice if we just didn't have to
+                            //       have to all return the same type. We solve this by having them
+                            // all       be vec::IntoIter, but it would
+                            // be nice if we just didn't have to
                             //       do this.
                             //       It might be possible to solve this by letting all match arms
                             //       evaluate to a dyn Iterator.
@@ -544,8 +553,8 @@ impl StagedCommit {
             )
     }
 
-    /// Returns `true` if the member was removed through a proposal covered by this Commit message
-    /// and `false` otherwise.
+    /// Returns `true` if the member was removed through a proposal covered by
+    /// this Commit message and `false` otherwise.
     pub fn self_removed(&self) -> bool {
         matches!(self.state, StagedCommitState::PublicState(_))
     }
@@ -558,7 +567,8 @@ impl StagedCommit {
         }
     }
 
-    /// Consume this [`StagedCommit`] and return the internal [`StagedCommitState`].
+    /// Consume this [`StagedCommit`] and return the internal
+    /// [`StagedCommitState`].
     pub(crate) fn into_state(self) -> StagedCommitState {
         self.state
     }
@@ -575,7 +585,8 @@ impl StagedCommit {
     }
 }
 
-/// This struct is used internally by [StagedCommit] to encapsulate all the modified group state.
+/// This struct is used internally by [StagedCommit] to encapsulate all the
+/// modified group state.
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "test-utils"), derive(Clone, PartialEq))]
 pub(crate) struct MemberStagedCommitState {

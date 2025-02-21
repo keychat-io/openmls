@@ -40,7 +40,8 @@ fn create_group(
     )
 }
 
-// Takes an existing group, adds a new member and sends a message from the second member to the first one, returns that message
+// Takes an existing group, adds a new member and sends a message from the
+// second member to the first one, returns that message
 fn receive_message(
     ciphersuite: Ciphersuite,
     provider: &impl crate::storage::OpenMlsProvider,

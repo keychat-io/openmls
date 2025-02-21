@@ -8,7 +8,8 @@ use super::{
     private_message_in::PrivateMessageContentIn, *,
 };
 
-/// This function implements deserialization manually, as it requires `content_type` as additional input.
+/// This function implements deserialization manually, as it requires
+/// `content_type` as additional input.
 pub(super) fn deserialize_ciphertext_content<R: Read>(
     bytes: &mut R,
     content_type: ContentType,

@@ -1,18 +1,19 @@
 //! This modules contains KATs for testing the stability of storage.
 //!
-//! The KAT generation performs a few group operations (e.g. create, add, set required capabilties)
-//! and at each step saves a serialized copy of the provider, along with the group id of the
-//! created group.
+//! The KAT generation performs a few group operations (e.g. create, add, set
+//! required capabilties) and at each step saves a serialized copy of the
+//! provider, along with the group id of the created group.
 //!
-//! The KAT test reads the serialized providers, loads the [`MlsGroup`] for the given group id, and
-//! checks that the group contains the expected information.
+//! The KAT test reads the serialized providers, loads the [`MlsGroup`] for the
+//! given group id, and checks that the group contains the expected information.
 //!
 //! It contains
-//! - a helper function that does the generation of the KAT for a single pair of provider and
-//!   ciphersuite
+//! - a helper function that does the generation of the KAT for a single pair of
+//!   provider and ciphersuite
 //! - a test that runs the KAT generation
-//! - a test that runs the KAT generation for all supported providers and ciphersuites and writes
-//!   the vectors to disk. This test is annotated with #[ignore] and not usually run.
+//! - a test that runs the KAT generation for all supported providers and
+//!   ciphersuites and writes the vectors to disk. This test is annotated with
+//!   #[ignore] and not usually run.
 //! - a test that
 //!   - loads the test data for the given provider and ciphersuite,
 //!   - deserializes the provider and group id

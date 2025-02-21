@@ -1,4 +1,5 @@
-//! This module contains tests regarding the use of [`MessageSecretsStore`] in [`MlsGroup`]
+//! This module contains tests regarding the use of [`MessageSecretsStore`] in
+//! [`MlsGroup`]
 
 use crate::group::tests_and_kats::utils::{generate_credential_with_key, generate_key_package};
 use crate::{

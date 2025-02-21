@@ -27,7 +27,8 @@ use crate::{
     },
 };
 
-// ValSem240: External Commit, inline Proposals: There MUST be at least one ExternalInit proposal.
+// ValSem240: External Commit, inline Proposals: There MUST be at least one
+// ExternalInit proposal.
 #[openmls_test::openmls_test]
 fn test_valsem240() {
     let ECValidationTestSetup {
@@ -96,7 +97,8 @@ fn test_valsem240() {
         .unwrap();
 }
 
-// ValSem241: External Commit, inline Proposals: There MUST be at most one ExternalInit proposal.
+// ValSem241: External Commit, inline Proposals: There MUST be at most one
+// ExternalInit proposal.
 #[openmls_test::openmls_test]
 fn test_valsem241() {
     // Test with PublicMessage
@@ -159,7 +161,8 @@ fn test_valsem241() {
         .expect("Unexpected error.");
 }
 
-// ValSem242: External Commit must only cover inline proposal in allowlist (ExternalInit, Remove, PreSharedKey)
+// ValSem242: External Commit must only cover inline proposal in allowlist
+// (ExternalInit, Remove, PreSharedKey)
 #[openmls_test::openmls_test]
 fn test_valsem242() {
     // Test with PublicMessage
@@ -444,7 +447,8 @@ fn test_valsem245() {
         .unwrap();
 }
 
-// ValSem246: External Commit: The signature of the PublicMessage MUST be verified with the credential of the KeyPackage in the included `path`.
+// ValSem246: External Commit: The signature of the PublicMessage MUST be
+// verified with the credential of the KeyPackage in the included `path`.
 #[openmls_test::openmls_test]
 fn test_valsem246() {
     // Test with PublicMessage
@@ -486,7 +490,8 @@ fn test_valsem246() {
 
         public_message_commit_bad.set_content(FramedContentBody::Commit(commit_bad));
 
-        // We have to re-sign (with the original credential), since we changed the content.
+        // We have to re-sign (with the original credential), since we changed the
+        // content.
         resign_external_commit(
             &bob_credential.signer,
             public_message_commit_bad,
@@ -511,7 +516,8 @@ fn test_valsem246() {
         ProcessMessageError::ValidationError(ValidationError::InvalidSignature)
     ));
 
-    // This shows that the credential in the original path key package is actually bob's credential.
+    // This shows that the credential in the original path key package is actually
+    // bob's credential.
     let commit = if let FramedContentBody::Commit(commit) = public_message_commit.content() {
         commit.clone()
     } else {
@@ -592,7 +598,8 @@ fn test_pure_ciphertest() {
     let mls_message_in: MlsMessageIn = message.into();
     assert_eq!(mls_message_in.wire_format(), WireFormat::PublicMessage);
 
-    // Would fail if handshake message processing did not distinguish external messages
+    // Would fail if handshake message processing did not distinguish external
+    // messages
     assert!(alice_group
         .process_message(
             provider,

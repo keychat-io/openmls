@@ -1,8 +1,9 @@
 //! # Message framing
 //!
-//! This module contains framing-related operations for MLS messages, including validation operations.
-//! The general structure of the framing process in OpenMLS closely mirrors the
-//! one described in Section 7 of the MLS specification. It can be visualized as follows:
+//! This module contains framing-related operations for MLS messages, including
+//! validation operations. The general structure of the framing process in
+//! OpenMLS closely mirrors the one described in Section 7 of the MLS
+//! specification. It can be visualized as follows:
 //!
 //! ```text
 //!                               Proposal        Commit     Application Data
@@ -37,8 +38,10 @@
 //!                           MLSMessage
 //! ```
 //!
-//!  - [`MlsMessageIn`]/[`MlsMessageOut`]: Unified message type for incoming & outgoing MLS messages
-//!  - [`ApplicationMessage`]: Application message received through a [`ProcessedMessage`]
+//!  - [`MlsMessageIn`]/[`MlsMessageOut`]: Unified message type for incoming &
+//!    outgoing MLS messages
+//!  - [`ApplicationMessage`]: Application message received through a
+//!    [`ProcessedMessage`]
 
 use serde::{Deserialize, Serialize};
 use tls_codec::*;

@@ -4,7 +4,8 @@ use crate::{
     treesync::{node::Node, RatchetTree, TreeSync},
 };
 
-// Verifies that when we add a leaf to a tree with blank leaf nodes, the leaf will be added at the leftmost free leaf index
+// Verifies that when we add a leaf to a tree with blank leaf nodes, the leaf
+// will be added at the leftmost free leaf index
 #[openmls_test::openmls_test]
 fn test_free_leaf_computation() {
     let (c_0, sk_0) = new_credential(provider, b"leaf0", ciphersuite.signature_algorithm());

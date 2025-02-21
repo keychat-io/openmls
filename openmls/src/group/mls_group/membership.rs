@@ -1,6 +1,7 @@
 //! MLS group membership
 //!
-//! This module contains membership-related operations and exposes [`RemoveOperation`].
+//! This module contains membership-related operations and exposes
+//! [`RemoveOperation`].
 
 use errors::EmptyInputError;
 use openmls_traits::{signatures::Signer, storage::StorageProvider as _};
@@ -25,9 +26,10 @@ impl MlsGroup {
     /// forcing an update of the committer's leaf [KeyPackage], use
     /// [`Self::add_members_without_update()`].
     ///
-    /// If successful, it returns a triple of [`MlsMessageOut`]s, where the first
-    /// contains the commit, the second one the [`Welcome`] and the third an optional [GroupInfo] that
-    /// will be [Some] if the group has the `use_ratchet_tree_extension` flag set.
+    /// If successful, it returns a triple of [`MlsMessageOut`]s, where the
+    /// first contains the commit, the second one the [`Welcome`] and the
+    /// third an optional [GroupInfo] that will be [Some] if the group has
+    /// the `use_ratchet_tree_extension` flag set.
     ///
     /// Returns an error if there is a pending commit.
     ///
@@ -124,11 +126,12 @@ impl MlsGroup {
     /// Members are removed by providing the member's leaf index.
     ///
     /// If successful, it returns a tuple of [`MlsMessageOut`] (containing the
-    /// commit), an optional [`MlsMessageOut`] (containing the [`Welcome`]) and the current
-    /// [GroupInfo].
+    /// commit), an optional [`MlsMessageOut`] (containing the [`Welcome`]) and
+    /// the current [GroupInfo].
     /// The [`Welcome`] is [Some] when the queue of pending proposals contained
     /// add proposals
-    /// The [GroupInfo] is [Some] if the group has the `use_ratchet_tree_extension` flag set.
+    /// The [GroupInfo] is [Some] if the group has the
+    /// `use_ratchet_tree_extension` flag set.
     ///
     /// Returns an error if there is a pending commit.
     ///
@@ -173,8 +176,9 @@ impl MlsGroup {
 
     /// Leave the group.
     ///
-    /// Creates a Remove Proposal that needs to be covered by a Commit from a different member.
-    /// The Remove Proposal is returned as a [`MlsMessageOut`].
+    /// Creates a Remove Proposal that needs to be covered by a Commit from a
+    /// different member. The Remove Proposal is returned as a
+    /// [`MlsMessageOut`].
     ///
     /// Returns an error if there is a pending commit.
     pub fn leave_group<Provider: OpenMlsProvider>(
@@ -291,9 +295,9 @@ impl MlsGroup {
     }
 }
 
-/// Helper `enum` that classifies the kind of remove operation. This can be used to
-/// better interpret the semantic value of a remove proposal that is covered in a
-/// Commit message.
+/// Helper `enum` that classifies the kind of remove operation. This can be used
+/// to better interpret the semantic value of a remove proposal that is covered
+/// in a Commit message.
 #[derive(Debug)]
 pub enum RemoveOperation {
     /// We issued a remove proposal for ourselves in the previous epoch and
@@ -305,15 +309,16 @@ pub enum RemoveOperation {
     /// the group by issuing a remove proposal in the previous epoch and the
     /// proposal has now been committed.
     TheyLeft(LeafNodeIndex),
-    /// Another member (indicated by the leaf index) was removed by the [`Sender`].
+    /// Another member (indicated by the leaf index) was removed by the
+    /// [`Sender`].
     TheyWereRemovedBy((LeafNodeIndex, Sender)),
     /// We removed another member (indicated by the leaf index).
     WeRemovedThem(LeafNodeIndex),
 }
 
 impl RemoveOperation {
-    /// Constructs a new [`RemoveOperation`] from a [`QueuedRemoveProposal`] and the
-    /// corresponding [`MlsGroup`].
+    /// Constructs a new [`RemoveOperation`] from a [`QueuedRemoveProposal`] and
+    /// the corresponding [`MlsGroup`].
     pub fn new(
         queued_remove_proposal: QueuedRemoveProposal,
         group: &MlsGroup,

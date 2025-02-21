@@ -132,8 +132,9 @@ impl PrivateMessage {
         )
     }
 
-    /// Internal function to encrypt content. The extra message header is only used
-    /// for tests. Otherwise, the data from the given `AuthenticatedContent` is used.
+    /// Internal function to encrypt content. The extra message header is only
+    /// used for tests. Otherwise, the data from the given
+    /// `AuthenticatedContent` is used.
     fn encrypt_content<T>(
         crypto: &impl OpenMlsCrypto,
         rand: &impl OpenMlsRand,
@@ -288,8 +289,9 @@ impl PrivateMessage {
             .content()
             .serialize_without_type(buffer)?;
         authenticated_content.auth.tls_serialize(buffer)?;
-        // Note: The `tls_codec::Serialize` implementation for `&[u8]` prepends the length.
-        // We do not want this here and thus use the "raw" `write_all` method.
+        // Note: The `tls_codec::Serialize` implementation for `&[u8]` prepends the
+        // length. We do not want this here and thus use the "raw" `write_all`
+        // method.
         buffer
             .write_all(&vec![0u8; padding_length])
             .map_err(|_| Error::EncodingError("Failed to write padding.".into()))?;

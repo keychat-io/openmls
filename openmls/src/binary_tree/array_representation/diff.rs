@@ -3,9 +3,9 @@
 //! # About
 //!
 //! This module provides the [`AbDiff`] and [`StagedAbDiff`] structs that allow
-//! performing changes to an [`ABinaryTree`] instance without immediately applying
-//! the them. Instead, the changes can be applied to the diff and the results
-//! examined before merging the given diff back into the tree (or not).
+//! performing changes to an [`ABinaryTree`] instance without immediately
+//! applying the them. Instead, the changes can be applied to the diff and the
+//! results examined before merging the given diff back into the tree (or not).
 //!
 //! # Don't Panic!
 //!
@@ -35,12 +35,12 @@ use super::{
 
 /// The [`StagedAbDiff`] can be created from an [`AbDiff`] instance. It's sole
 /// purpose is to be subsequently merged into an existing [`ABinaryTree`]
-/// instance. The difference between [`StagedAbDiff`] and an [`AbDiff`] is that a
-/// [`StagedAbDiff`] is immutable and does not contain a reference to the original
-/// tree. Since it only contains the actual diff without reference to the
-/// original content, it can't provide the same information as the [`AbDiff`] it
-/// was created from. However, the lack of the internal reference means that its
-/// lifetime is not tied to that of the original tree.
+/// instance. The difference between [`StagedAbDiff`] and an [`AbDiff`] is that
+/// a [`StagedAbDiff`] is immutable and does not contain a reference to the
+/// original tree. Since it only contains the actual diff without reference to
+/// the original content, it can't provide the same information as the
+/// [`AbDiff`] it was created from. However, the lack of the internal reference
+/// means that its lifetime is not tied to that of the original tree.
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "test-utils"), derive(Clone, PartialEq))]
 pub(crate) struct StagedAbDiff<L: Clone + Debug + Default, P: Clone + Debug + Default> {
@@ -75,9 +75,9 @@ impl<L: Clone + Debug + Default, P: Clone + Debug + Default> StagedAbDiff<L, P> 
 
 /// The [`AbDiff`] represents a set of differences (i.e. a "Diff") for an
 /// [`ABinaryTree`]. It can be created from an [`ABinaryTree`] instance and then
-/// accessed mutably or immutably. Any changes are saved by the [`AbDiff`] applied
-/// to the original [`ABinaryTree`] instance by converting it to a [`StagedAbDiff`]
-/// and subsequently merging it.
+/// accessed mutably or immutably. Any changes are saved by the [`AbDiff`]
+/// applied to the original [`ABinaryTree`] instance by converting it to a
+/// [`StagedAbDiff`] and subsequently merging it.
 pub(crate) struct AbDiff<'a, L: Clone + Debug + Default, P: Clone + Debug + Default> {
     original_tree: &'a ABinaryTree<L, P>,
     leaf_diff: BTreeMap<LeafNodeIndex, L>,
@@ -207,9 +207,9 @@ impl<L: Clone + Debug + Default, P: Clone + Debug + Default> AbDiff<'_, L, P> {
     // Functions related to the direct paths of leaves
     //////////////////////////////////////////////////
 
-    /// Returns a vector of [`ParentNodeIndex`] instances, each one referencing a
-    /// node in the direct path of the given [`LeafNodeIndex`], ordered from the
-    /// parent of the corresponding leaf to the root of the tree.
+    /// Returns a vector of [`ParentNodeIndex`] instances, each one referencing
+    /// a node in the direct path of the given [`LeafNodeIndex`], ordered
+    /// from the parent of the corresponding leaf to the root of the tree.
     pub(crate) fn direct_path(&self, leaf_index: LeafNodeIndex) -> Vec<ParentNodeIndex> {
         direct_path(leaf_index, self.size())
     }
@@ -242,8 +242,8 @@ impl<L: Clone + Debug + Default, P: Clone + Debug + Default> AbDiff<'_, L, P> {
     // Functions related to the shared subtree of two given leaves
     //////////////////////////////////////////////////////////////
 
-    /// Returns [`TreeNodeIndex`] to the copath node of the `leaf_index_1` that is
-    /// in the direct path of `leaf_index_2`.
+    /// Returns [`TreeNodeIndex`] to the copath node of the `leaf_index_1` that
+    /// is in the direct path of `leaf_index_2`.
     pub(crate) fn subtree_root_copath_node(
         &self,
         leaf_index_1: LeafNodeIndex,
@@ -298,8 +298,8 @@ impl<L: Clone + Debug + Default, P: Clone + Debug + Default> AbDiff<'_, L, P> {
     }
 
     /// Returns a [`TreeNodeIndex`] to the right child of the referenced node.
-    /// Returns an error when the given [`TreeNodeIndex`] points to a leaf node or
-    /// to a node not in the tree.
+    /// Returns an error when the given [`TreeNodeIndex`] points to a leaf node
+    /// or to a node not in the tree.
     pub(crate) fn right_child(&self, node_index: ParentNodeIndex) -> TreeNodeIndex {
         right(node_index)
     }

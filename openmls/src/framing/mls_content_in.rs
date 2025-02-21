@@ -1,5 +1,5 @@
-//! This module contains the [`FramedContentIn`] struct and associated helper structs
-//! such as [`FramedContentTbsIn`], as well as their implementations.
+//! This module contains the [`FramedContentIn`] struct and associated helper
+//! structs such as [`FramedContentTbsIn`], as well as their implementations.
 
 use crate::{
     ciphersuite::signable::Signable,

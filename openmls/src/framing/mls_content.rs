@@ -1,5 +1,5 @@
-//! This module contains the [`FramedContent`] struct and associated helper structs
-//! such as [`FramedContentTbs`], as well as their implementations.
+//! This module contains the [`FramedContent`] struct and associated helper
+//! structs such as [`FramedContentTbs`], as well as their implementations.
 
 use crate::{
     ciphersuite::signable::Signable,
@@ -83,7 +83,8 @@ impl FramedContentBody {
         }
     }
 
-    /// Returns the length of the serialized content without the `content_type` field.
+    /// Returns the length of the serialized content without the `content_type`
+    /// field.
     pub(crate) fn serialized_len_without_type(&self) -> usize {
         match self {
             FramedContentBody::Application(a) => a.tls_serialized_len(),

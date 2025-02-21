@@ -1,7 +1,8 @@
 //! This module describes the storage provider and type traits.
-//! The concept is that the type traits are implemented by OpenMLS, and the storage provider
-//! implements the [`StorageProvider`] trait. The trait mostly defines getters and setters, but
-//! also a few methods that append to lists (which behave similar to setters).
+//! The concept is that the type traits are implemented by OpenMLS, and the
+//! storage provider implements the [`StorageProvider`] trait. The trait mostly
+//! defines getters and setters, but also a few methods that append to lists
+//! (which behave similar to setters).
 
 use serde::{de::DeserializeOwned, Serialize};
 /// The storage version used by OpenMLS
@@ -13,13 +14,15 @@ pub const CURRENT_VERSION: u16 = 1;
 #[cfg(any(test, feature = "test-utils"))]
 pub const V_TEST: u16 = u16::MAX;
 
-/// StorageProvider describes the storage backing OpenMLS and persists the state of OpenMLS groups.
+/// StorageProvider describes the storage backing OpenMLS and persists the state
+/// of OpenMLS groups.
 ///
-/// The getters for individual values usually return a `Result<Option<T>, E>`, where `Err(_)`
-/// indicates that some sort of IO or internal error occurred, and `Ok(None)` indicates that no
-/// error occurred, but no value exists.
-/// Many getters for lists return a `Result<Vec<T>, E>`. In this case, if there was no error but
-/// the value doesn't exist, an empty vector should be returned.
+/// The getters for individual values usually return a `Result<Option<T>, E>`,
+/// where `Err(_)` indicates that some sort of IO or internal error occurred,
+/// and `Ok(None)` indicates that no error occurred, but no value exists.
+/// Many getters for lists return a `Result<Vec<T>, E>`. In this case, if there
+/// was no error but the value doesn't exist, an empty vector should be
+/// returned.
 ///
 /// Any value that uses the group id as key is required by the group.
 /// Returning `None` or an error for any of them will cause a failure when
@@ -61,8 +64,9 @@ pub trait StorageProvider<const VERSION: u16> {
 
     /// Enqueue a proposal.
     ///
-    /// A good way to implement this could be to add a proposal to a proposal store, indexed by the
-    /// proposal reference, and adding the reference to a per-group proposal queue list.
+    /// A good way to implement this could be to add a proposal to a proposal
+    /// store, indexed by the proposal reference, and adding the reference
+    /// to a per-group proposal queue list.
     fn queue_proposal<
         GroupId: traits::GroupId<VERSION>,
         ProposalRef: traits::ProposalRef<VERSION>,
@@ -141,7 +145,8 @@ pub trait StorageProvider<const VERSION: u16> {
         resumption_psk_store: &ResumptionPskStore,
     ) -> Result<(), Self::Error>;
 
-    /// Writes the own leaf index inside the group for the group with the given id.
+    /// Writes the own leaf index inside the group for the group with the given
+    /// id.
     fn write_own_leaf_index<
         GroupId: traits::GroupId<VERSION>,
         LeafNodeIndex: traits::LeafNodeIndex<VERSION>,
@@ -210,11 +215,12 @@ pub trait StorageProvider<const VERSION: u16> {
     /// Store key packages.
     ///
     /// Store a key package. This includes the private init key.
-    /// The encryption key is stored separately with `write_encryption_key_pair`.
+    /// The encryption key is stored separately with
+    /// `write_encryption_key_pair`.
     ///
-    /// Note that it is recommended to store a list of the hash references as well
-    /// in order to iterate over key packages. OpenMLS does not have a reference
-    /// for them.
+    /// Note that it is recommended to store a list of the hash references as
+    /// well in order to iterate over key packages. OpenMLS does not have a
+    /// reference for them.
     // ANCHOR: write_key_package
     fn write_key_package<
         HashReference: traits::HashReference<VERSION>,
@@ -230,8 +236,8 @@ pub trait StorageProvider<const VERSION: u16> {
     ///
     /// This stores PSKs based on the PSK id.
     ///
-    /// PSKs are only read by OpenMLS. The application is responsible for managing
-    /// and storing PSKs.
+    /// PSKs are only read by OpenMLS. The application is responsible for
+    /// managing and storing PSKs.
     fn write_psk<PskId: traits::PskId<VERSION>, PskBundle: traits::PskBundle<VERSION>>(
         &self,
         psk_id: &PskId,
@@ -259,7 +265,8 @@ pub trait StorageProvider<const VERSION: u16> {
     ) -> Result<Vec<LeafNode>, Self::Error>;
     // ANCHOR_END: own_leaf_nodes
 
-    /// Returns references of all queued proposals for the group with group id `group_id`, or an empty vector of none are stored.
+    /// Returns references of all queued proposals for the group with group id
+    /// `group_id`, or an empty vector of none are stored.
     fn queued_proposal_refs<
         GroupId: traits::GroupId<VERSION>,
         ProposalRef: traits::ProposalRef<VERSION>,
@@ -268,7 +275,8 @@ pub trait StorageProvider<const VERSION: u16> {
         group_id: &GroupId,
     ) -> Result<Vec<ProposalRef>, Self::Error>;
 
-    /// Returns all queued proposals for the group with group id `group_id`, or an empty vector of none are stored.
+    /// Returns all queued proposals for the group with group id `group_id`, or
+    /// an empty vector of none are stored.
     fn queued_proposals<
         GroupId: traits::GroupId<VERSION>,
         ProposalRef: traits::ProposalRef<VERSION>,
@@ -293,7 +301,8 @@ pub trait StorageProvider<const VERSION: u16> {
         group_id: &GroupId,
     ) -> Result<Option<GroupContext>, Self::Error>;
 
-    /// Returns the interim transcript hash for the group with group id `group_id`.
+    /// Returns the interim transcript hash for the group with group id
+    /// `group_id`.
     fn interim_transcript_hash<
         GroupId: traits::GroupId<VERSION>,
         InterimTranscriptHash: traits::InterimTranscriptHash<VERSION>,
@@ -338,7 +347,8 @@ pub trait StorageProvider<const VERSION: u16> {
         group_id: &GroupId,
     ) -> Result<Option<ResumptionPskStore>, Self::Error>;
 
-    /// Returns the own leaf index inside the group for the group with the given id.
+    /// Returns the own leaf index inside the group for the group with the given
+    /// id.
     fn own_leaf_index<
         GroupId: traits::GroupId<VERSION>,
         LeafNodeIndex: traits::LeafNodeIndex<VERSION>,
@@ -417,7 +427,8 @@ pub trait StorageProvider<const VERSION: u16> {
     //     ---    deleters for group state    ---
     //
 
-    /// Removes an individual proposal from the proposal queue of the group with the provided id
+    /// Removes an individual proposal from the proposal queue of the group with
+    /// the provided id
     fn remove_proposal<
         GroupId: traits::GroupId<VERSION>,
         ProposalRef: traits::ProposalRef<VERSION>,
@@ -481,7 +492,8 @@ pub trait StorageProvider<const VERSION: u16> {
         group_id: &GroupId,
     ) -> Result<(), Self::Error>;
 
-    /// Deletes the own leaf index inside the group for the group with the given id.
+    /// Deletes the own leaf index inside the group for the group with the given
+    /// id.
     fn delete_own_leaf_index<GroupId: traits::GroupId<VERSION>>(
         &self,
         group_id: &GroupId,
@@ -556,9 +568,10 @@ pub trait StorageProvider<const VERSION: u16> {
 // base traits for keys and values
 
 // ANCHOR: key_trait
-/// Key is a trait implemented by all types that serve as a key (in the database sense) to in the
-/// storage. For example, a GroupId is a key to the stored entities for the group with that id.
-/// The point of a key is not to be stored, it's to address something that is stored.
+/// Key is a trait implemented by all types that serve as a key (in the database
+/// sense) to in the storage. For example, a GroupId is a key to the stored
+/// entities for the group with that id. The point of a key is not to be stored,
+/// it's to address something that is stored.
 pub trait Key<const VERSION: u16>: Serialize {}
 // ANCHOR_END: key_trait
 
@@ -571,12 +584,14 @@ impl Entity<CURRENT_VERSION> for bool {}
 impl Entity<CURRENT_VERSION> for u8 {}
 
 // in the following we define specific traits for Keys and Entities. That way
-// we can don't sacrifice type safety in the implementations of the storage provider.
-// note that there are types that are used both as keys and as entities.
+// we can don't sacrifice type safety in the implementations of the storage
+// provider. note that there are types that are used both as keys and as
+// entities.
 
 // ANCHOR: traits
-/// Each trait in this module corresponds to a type. Some are used as keys, some as
-/// entities, and some both. Therefore, the Key and/or Entity traits also need to be implemented.
+/// Each trait in this module corresponds to a type. Some are used as keys, some
+/// as entities, and some both. Therefore, the Key and/or Entity traits also
+/// need to be implemented.
 pub mod traits {
     use super::{Entity, Key};
 

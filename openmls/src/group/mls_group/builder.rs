@@ -53,9 +53,9 @@ impl MlsGroupBuilder {
 
     /// Build a new group with the given group ID.
     ///
-    /// If an [`MlsGroupCreateConfig`] is provided, it will be used to configure the
-    /// group. Otherwise, the internal builder is used to build one with the
-    /// parameters set on this builder.
+    /// If an [`MlsGroupCreateConfig`] is provided, it will be used to configure
+    /// the group. Otherwise, the internal builder is used to build one with
+    /// the parameters set on this builder.
     pub(super) fn build_internal<Provider: OpenMlsProvider>(
         self,
         provider: &Provider,
@@ -193,9 +193,10 @@ impl MlsGroupBuilder {
     /// **WARNING**
     ///
     /// This feature enables the storage of message secrets from past epochs.
-    /// It is a trade-off between functionality and forward secrecy and should only be enabled
-    /// if the Delivery Service cannot guarantee that application messages will be sent in
-    /// the same epoch in which they were generated. The number for `max_epochs` should be
+    /// It is a trade-off between functionality and forward secrecy and should
+    /// only be enabled if the Delivery Service cannot guarantee that
+    /// application messages will be sent in the same epoch in which they
+    /// were generated. The number for `max_epochs` should be
     /// as low as possible.
     pub fn max_past_epochs(mut self, max_past_epochs: usize) -> Self {
         self.mls_group_create_config_builder = self

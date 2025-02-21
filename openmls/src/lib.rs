@@ -4,9 +4,9 @@
 //! up to parties and have them create a group.
 //!
 //! ```
-//! use openmls::{prelude::{*,  tls_codec::*}};
-//! use openmls_rust_crypto::{OpenMlsRustCrypto};
+//! use openmls::prelude::{tls_codec::*, *};
 //! use openmls_basic_credential::SignatureKeyPair;
+//! use openmls_rust_crypto::OpenMlsRustCrypto;
 //!
 //! // Define ciphersuite ...
 //! let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -23,16 +23,15 @@
 //!     provider: &impl OpenMlsProvider,
 //! ) -> (CredentialWithKey, SignatureKeyPair) {
 //!     let credential = BasicCredential::new(identity);
-//!     let signature_keys =
-//!         SignatureKeyPair::new(signature_algorithm)
-//!             .expect("Error generating a signature key pair.");
+//!     let signature_keys = SignatureKeyPair::new(signature_algorithm)
+//!         .expect("Error generating a signature key pair.");
 //!
 //!     // Store the signature key into the key store so OpenMLS has access
 //!     // to it.
 //!     signature_keys
 //!         .store(provider.storage())
 //!         .expect("Error storing signature keys in key store.");
-//!     
+//!
 //!     (
 //!         CredentialWithKey {
 //!             credential: credential.into(),
@@ -51,12 +50,7 @@
 //! ) -> KeyPackageBundle {
 //!     // Create the key package
 //!     KeyPackage::builder()
-//!         .build(
-//!             ciphersuite,
-//!             provider,
-//!             signer,
-//!             credential_with_key,
-//!         )
+//!         .build(ciphersuite, provider, signer, credential_with_key)
 //!         .unwrap()
 //! }
 //!
@@ -79,7 +73,12 @@
 //! // in MLS
 //!
 //! // Generate KeyPackages
-//! let maxim_key_package = generate_key_package(ciphersuite, provider, &maxim_signer, maxim_credential_with_key);
+//! let maxim_key_package = generate_key_package(
+//!     ciphersuite,
+//!     provider,
+//!     &maxim_signer,
+//!     maxim_credential_with_key,
+//! );
 //!
 //! // Now Sasha starts a new group ...
 //! let mut sasha_group = MlsGroup::new(
@@ -94,28 +93,32 @@
 //! // The key package has to be retrieved from Maxim in some way. Most likely
 //! // via a server storing key packages for users.
 //! let (mls_message_out, welcome_out, group_info) = sasha_group
-//!     .add_members(provider, &sasha_signer, &[maxim_key_package.key_package().clone()])
+//!     .add_members(
+//!         provider,
+//!         &sasha_signer,
+//!         &[maxim_key_package.key_package().clone()],
+//!     )
 //!     .expect("Could not add members.");
 //!
 //! // Sasha merges the pending commit that adds Maxim.
 //! sasha_group
-//!    .merge_pending_commit(provider)
-//!    .expect("error merging pending commit");
+//!     .merge_pending_commit(provider)
+//!     .expect("error merging pending commit");
 //!
 //! // Sasha serializes the [`MlsMessageOut`] containing the [`Welcome`].
 //! let serialized_welcome = welcome_out
-//!    .tls_serialize_detached()
-//!    .expect("Error serializing welcome");
+//!     .tls_serialize_detached()
+//!     .expect("Error serializing welcome");
 //!
 //! // Maxim can now de-serialize the message as an [`MlsMessageIn`] ...
 //! let mls_message_in = MlsMessageIn::tls_deserialize(&mut serialized_welcome.as_slice())
-//!    .expect("An unexpected error occurred.");
+//!     .expect("An unexpected error occurred.");
 //!
 //! // ... and inspect the message.
 //! let welcome = match mls_message_in.extract() {
-//!    MlsMessageBodyIn::Welcome(welcome) => welcome,
-//!    // We know it's a welcome message, so we ignore all other cases.
-//!    _ => unreachable!("Unexpected message type."),
+//!     MlsMessageBodyIn::Welcome(welcome) => welcome,
+//!     // We know it's a welcome message, so we ignore all other cases.
+//!     _ => unreachable!("Unexpected message type."),
 //! };
 //!
 //! // Now Maxim can build a staged join for the group in order to inspect the welcome
@@ -146,16 +149,6 @@
 
 #[cfg(all(target_arch = "wasm32", not(feature = "js")))]
 compile_error!("In order for OpenMLS to build for WebAssembly, JavaScript APIs must be available (for access to secure randomness and the current time). This can be signalled by setting the `js` feature on OpenMLS.");
-
-// === Testing ===
-
-/// Single place, re-exporting all structs and functions needed for integration tests
-#[cfg(any(feature = "test-utils", test))]
-pub mod prelude_test;
-
-#[cfg(any(feature = "test-utils", test))]
-#[macro_use]
-pub mod test_utils;
 
 #[cfg(test)]
 pub mod kat_vl;

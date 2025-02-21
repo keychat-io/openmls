@@ -1,5 +1,6 @@
-//! This module contains the commit builder types, which can be used to build regular (i.e.
-//! non-external) commits. See the documentation of [`CommitBuilder`] for more information.
+//! This module contains the commit builder types, which can be used to build
+//! regular (i.e. non-external) commits. See the documentation of
+//! [`CommitBuilder`] for more information.
 
 use openmls_traits::{
     crypto::OpenMlsCrypto, random::OpenMlsRand, signatures::Signer, storage::StorageProvider as _,
@@ -41,8 +42,9 @@ pub struct Initial {
     force_self_update: bool,
     leaf_node_parameters: LeafNodeParameters,
 
-    /// Whether or not to clear the proposal queue of the group when staging the commit. Needs to
-    /// be done when we include the commits that have already been queued.
+    /// Whether or not to clear the proposal queue of the group when staging the
+    /// commit. Needs to be done when we include the commits that have
+    /// already been queued.
     consume_proposal_store: bool,
 }
 
@@ -52,32 +54,37 @@ pub struct LoadedPsks {
     force_self_update: bool,
     leaf_node_parameters: LeafNodeParameters,
 
-    /// Whether or not to clear the proposal queue of the group when staging the commit. Needs to
-    /// be done when we include the commits that have already been queued.
+    /// Whether or not to clear the proposal queue of the group when staging the
+    /// commit. Needs to be done when we include the commits that have
+    /// already been queued.
     consume_proposal_store: bool,
     psks: Vec<(PreSharedKeyId, Secret)>,
 }
 
-/// This stage is after we validated the data, ready for staging and exporting the messages
+/// This stage is after we validated the data, ready for staging and exporting
+/// the messages
 pub struct Complete {
     result: CreateCommitResult,
 }
 
-/// The [`CommitBuilder`] is used to easily and dynamically build commit messages.
-/// It operates in a series of stages:
+/// The [`CommitBuilder`] is used to easily and dynamically build commit
+/// messages. It operates in a series of stages:
 ///
-/// The [`Initial`] stage is used to populate the builder with proposals and other data using
-/// method calls on the builder that let the builder stay in the same stage.
+/// The [`Initial`] stage is used to populate the builder with proposals and
+/// other data using method calls on the builder that let the builder stay in
+/// the same stage.
 ///
-/// The next stage is [`LoadedPsks`], and it signifies the stage after the builder loaded the the
-/// pre-shared keys for the PreSharedKey proposals in this commit.
+/// The next stage is [`LoadedPsks`], and it signifies the stage after the
+/// builder loaded the the pre-shared keys for the PreSharedKey proposals in
+/// this commit.
 ///
-/// Then comes the [`Complete`] stage, which denotes that all data has been validated. From this
-/// stage, the commit can be staged in the group, and the outgoing messages returned.
+/// Then comes the [`Complete`] stage, which denotes that all data has been
+/// validated. From this stage, the commit can be staged in the group, and the
+/// outgoing messages returned.
 ///
-/// For example, to create a commit to a new Add proposal with a KeyPackage `key_package_to_add`
-/// that does not commit to the proposals in the proposal store, one could build the commit as
-/// follows:
+/// For example, to create a commit to a new Add proposal with a KeyPackage
+/// `key_package_to_add` that does not commit to the proposals in the proposal
+/// store, one could build the commit as follows:
 ///
 /// ```rust,ignore
 /// let message_bundle: CommitMessageBundle = mls_group
@@ -93,17 +100,17 @@ pub struct Complete {
 /// let group_info = message_bundle.welcome().expect("expected a group info since there was an add");
 /// ```
 ///
-/// In this example `signer` is a reference to a [`Signer`] and `app_policy_proposals` is the
-/// application-defined policy for which proposals to accept, implemented by an
-/// `FnMut(&QueuedProposal) -> bool`.
+/// In this example `signer` is a reference to a [`Signer`] and
+/// `app_policy_proposals` is the application-defined policy for which proposals
+/// to accept, implemented by an `FnMut(&QueuedProposal) -> bool`.
 ///
 /// See the [book] for another example.
 ///
 /// [book]: https://book.openmls.tech/user_manual/add_members.html
 #[derive(Debug)]
 pub struct CommitBuilder<'a, T> {
-    /// A mutable reference to the MlsGroup. This means that we hold an exclusive lock on the group
-    /// for the lifetime of this builder.
+    /// A mutable reference to the MlsGroup. This means that we hold an
+    /// exclusive lock on the group for the lifetime of this builder.
     group: &'a mut MlsGroup,
 
     /// The current stage
@@ -156,14 +163,15 @@ impl<'a> CommitBuilder<'a, Initial> {
         }
     }
 
-    /// Sets whether or not the proposals in the proposal store of the group should be included in
-    /// the commit. Defaults to `true`.
+    /// Sets whether or not the proposals in the proposal store of the group
+    /// should be included in the commit. Defaults to `true`.
     pub fn consume_proposal_store(mut self, consume_proposal_store: bool) -> Self {
         self.stage.consume_proposal_store = consume_proposal_store;
         self
     }
 
-    /// Sets whether or not the commit should force a self-update. Defaults to `false`.
+    /// Sets whether or not the commit should force a self-update. Defaults to
+    /// `false`.
     pub fn force_self_update(mut self, force_self_update: bool) -> Self {
         self.stage.force_self_update = force_self_update;
         self
@@ -181,15 +189,15 @@ impl<'a> CommitBuilder<'a, Initial> {
         self
     }
 
-    /// Sets the leaf node parameters for the new leaf node in a self-update. Implies that a
-    /// self-update takes place.
+    /// Sets the leaf node parameters for the new leaf node in a self-update.
+    /// Implies that a self-update takes place.
     pub fn leaf_node_parameters(mut self, leaf_node_parameters: LeafNodeParameters) -> Self {
         self.stage.leaf_node_parameters = leaf_node_parameters;
         self
     }
 
-    /// Adds an Add proposal to the provided [`KeyPackage`] to the list of proposals to be
-    /// committed.
+    /// Adds an Add proposal to the provided [`KeyPackage`] to the list of
+    /// proposals to be committed.
     pub fn propose_adds(mut self, key_packages: impl IntoIterator<Item = KeyPackage>) -> Self {
         self.stage.own_proposals.extend(
             key_packages
@@ -217,7 +225,8 @@ impl<'a> CommitBuilder<'a, Initial> {
         self
     }
 
-    /// Loads the PSKs for the PskProposals marked for inclusion and moves on to the next phase.
+    /// Loads the PSKs for the PskProposals marked for inclusion and moves on to
+    /// the next phase.
     pub fn load_psks<Storage: StorageProvider>(
         self,
         storage: &'a Storage,
@@ -262,9 +271,10 @@ impl<'a> CommitBuilder<'a, Initial> {
 }
 
 impl<'a> CommitBuilder<'a, LoadedPsks> {
-    /// Validates the inputs and builds the commit. The last argument `f` is a function that lets
-    /// the caller filter the proposals that are considered for inclusion. This provides a way for
-    /// the application to enforce custom policies in the creation of commits.
+    /// Validates the inputs and builds the commit. The last argument `f` is a
+    /// function that lets the caller filter the proposals that are
+    /// considered for inclusion. This provides a way for the application to
+    /// enforce custom policies in the creation of commits.
     pub fn build(
         self,
         rand: &impl OpenMlsRand,
@@ -287,17 +297,17 @@ impl<'a> CommitBuilder<'a, LoadedPsks> {
             })
             .collect::<Result<_, _>>()?;
 
-        // prepare an iterator for the proposals in the group's proposal store, but only if the
-        // flag is set.
+        // prepare an iterator for the proposals in the group's proposal store, but only
+        // if the flag is set.
         let group_proposal_store_queue = builder
             .group
             .pending_proposals()
             .filter(|_| cur_stage.consume_proposal_store)
             .cloned();
 
-        // prepare the iterator for the proposal validation and seletion function. That function
-        // assumes that "earlier in the list" means "older", so since our own proposals are
-        // newest, we have to put them last.
+        // prepare the iterator for the proposal validation and seletion function. That
+        // function assumes that "earlier in the list" means "older", so since
+        // our own proposals are newest, we have to put them last.
         let proposal_queue = group_proposal_store_queue.chain(own_proposals).filter(f);
 
         let (proposal_queue, contains_own_updates) =
@@ -484,8 +494,8 @@ impl<'a> CommitBuilder<'a, LoadedPsks> {
         // If there are invitations, we need to build a welcome
         let needs_welcome = !apply_proposals_values.invitation_list.is_empty();
 
-        // We need a GroupInfo if we need to build a Welcome. If the ratchet tree extension
-        // should be used, always build a GroupInfo.
+        // We need a GroupInfo if we need to build a Welcome. If the ratchet tree
+        // extension should be used, always build a GroupInfo.
         let needs_group_info =
             needs_welcome || builder.group.configuration().use_ratchet_tree_extension;
 
@@ -630,11 +640,11 @@ impl CommitBuilder<'_, Complete> {
 
         group.reset_aad();
 
-        // Convert PublicMessage messages to MLSMessage and encrypt them if required by the
-        // configuration.
+        // Convert PublicMessage messages to MLSMessage and encrypt them if required by
+        // the configuration.
         //
-        // Note that this performs writes to the storage, so we should do that here, rather than
-        // when working with the result.
+        // Note that this performs writes to the storage, so we should do that here,
+        // rather than when working with the result.
         let mls_message = group.content_to_mls_message(create_commit_result.commit, provider)?;
 
         Ok(CommitMessageBundle {
@@ -646,8 +656,9 @@ impl CommitBuilder<'_, Complete> {
     }
 }
 
-/// Contains the messages that are produced by committing. The messages can be accessed individually
-/// using getters or through the [`IntoIterator`] interface.
+/// Contains the messages that are produced by committing. The messages can be
+/// accessed individually using getters or through the [`IntoIterator`]
+/// interface.
 #[derive(Debug, Clone)]
 pub struct CommitMessageBundle {
     version: ProtocolVersion,
@@ -676,28 +687,30 @@ impl CommitMessageBundle {
 impl CommitMessageBundle {
     // borrowed getters
 
-    /// Gets a the Commit messsage. For owned version, see [`Self::into_commit`].
+    /// Gets a the Commit messsage. For owned version, see
+    /// [`Self::into_commit`].
     pub fn commit(&self) -> &MlsMessageOut {
         &self.commit
     }
 
-    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been added in the commit.
-    /// For owned version, see [`Self::into_welcome`].
+    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been
+    /// added in the commit. For owned version, see [`Self::into_welcome`].
     pub fn welcome(&self) -> Option<&Welcome> {
         self.welcome.as_ref()
     }
 
-    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been added in the commit.
-    /// Performs a copy of the Welcome. For owned version, see [`Self::into_welcome_msg`].
+    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been
+    /// added in the commit. Performs a copy of the Welcome. For owned
+    /// version, see [`Self::into_welcome_msg`].
     pub fn to_welcome_msg(&self) -> Option<MlsMessageOut> {
         self.welcome
             .as_ref()
             .map(|welcome| MlsMessageOut::from_welcome(welcome.clone(), self.version))
     }
 
-    /// Gets a the GroupInfo message. Only [`Some`] if new clients have been added or the group
-    /// configuration has `use_ratchet_tree_extension` set.
-    /// For owned version, see [`Self::into_group_info`].
+    /// Gets a the GroupInfo message. Only [`Some`] if new clients have been
+    /// added or the group configuration has `use_ratchet_tree_extension`
+    /// set. For owned version, see [`Self::into_group_info`].
     pub fn group_info(&self) -> Option<&GroupInfo> {
         self.group_info.as_ref()
     }
@@ -713,41 +726,46 @@ impl CommitMessageBundle {
     }
 
     // owned getters
-    /// Gets a the Commit messsage. This method consumes the [`CommitMessageBundle`]. For a borrowed
-    /// version see [`Self::commit`].
+    /// Gets a the Commit messsage. This method consumes the
+    /// [`CommitMessageBundle`]. For a borrowed version see
+    /// [`Self::commit`].
     pub fn into_commit(self) -> MlsMessageOut {
         self.commit
     }
 
-    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been added in the commit.
-    /// This method consumes the [`CommitMessageBundle`]. For a borrowed version see
+    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been
+    /// added in the commit. This method consumes the
+    /// [`CommitMessageBundle`]. For a borrowed version see
     /// [`Self::welcome`].
     pub fn into_welcome(self) -> Option<Welcome> {
         self.welcome
     }
 
-    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been added in the commit.
-    /// For a borrowed version, see [`Self::to_welcome_msg`].
+    /// Gets a the Welcome messsage. Only [`Some`] if new clients have been
+    /// added in the commit. For a borrowed version, see
+    /// [`Self::to_welcome_msg`].
     pub fn into_welcome_msg(self) -> Option<MlsMessageOut> {
         self.welcome
             .map(|welcome| MlsMessageOut::from_welcome(welcome, self.version))
     }
 
-    /// Gets a the GroupInfo message. Only [`Some`] if new clients have been added or the group
-    /// configuration has `use_ratchet_tree_extension` set.
-    /// This method consumes the [`CommitMessageBundle`]. For a borrowed version see
-    /// [`Self::group_info`].
+    /// Gets a the GroupInfo message. Only [`Some`] if new clients have been
+    /// added or the group configuration has `use_ratchet_tree_extension`
+    /// set. This method consumes the [`CommitMessageBundle`]. For a
+    /// borrowed version see [`Self::group_info`].
     pub fn into_group_info(self) -> Option<GroupInfo> {
         self.group_info
     }
 
-    /// Gets a the GroupInfo messsage. Only [`Some`] if new clients have been added in the commit.
+    /// Gets a the GroupInfo messsage. Only [`Some`] if new clients have been
+    /// added in the commit.
     pub fn into_group_info_msg(self) -> Option<MlsMessageOut> {
         self.group_info.map(|group_info| group_info.into())
     }
 
-    /// Gets all three messages, some of which optional. This method consumes the
-    /// [`CommitMessageBundle`]. For a borrowed version see [`Self::contents`].
+    /// Gets all three messages, some of which optional. This method consumes
+    /// the [`CommitMessageBundle`]. For a borrowed version see
+    /// [`Self::contents`].
     pub fn into_contents(self) -> (MlsMessageOut, Option<Welcome>, Option<GroupInfo>) {
         (self.commit, self.welcome, self.group_info)
     }

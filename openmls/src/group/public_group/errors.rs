@@ -12,7 +12,8 @@ pub enum CreationFromExternalError<StorageError> {
     /// See [`LibraryError`] for more details.
     #[error(transparent)]
     LibraryError(#[from] LibraryError),
-    /// This error indicates the public tree is invalid. See [`TreeSyncFromNodesError`] for more details.
+    /// This error indicates the public tree is invalid. See
+    /// [`TreeSyncFromNodesError`] for more details.
     #[error(transparent)]
     TreeSyncError(#[from] TreeSyncFromNodesError),
     /// Sender not found in tree.
@@ -36,7 +37,8 @@ pub enum CreationFromExternalError<StorageError> {
     /// A parent node has an unmerged leaf that is not a descendant of the node.
     #[error("A parent node has an unmerged leaf that is not a descendant of the node")]
     UnmergedLeafNotADescendant,
-    /// Found a path from a parent with an unmerged leaf to the leaf with nodes that do not have that as a leaf  
+    /// Found a path from a parent with an unmerged leaf to the leaf with nodes
+    /// that do not have that as a leaf
     #[error("Found a path from a parent with an unmerged leaf to the leaf with nodes that do not have that as a leaf")]
     IntermediateNodeMissingUnmergedLeaf,
     /// The ratchet tree contains duplcate encryption keys

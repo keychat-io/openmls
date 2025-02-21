@@ -184,7 +184,8 @@ pub fn run_test_vector(test: TreeKemTest, provider: &impl OpenMlsProvider) {
         // Sanity check.
         assert_eq!(path_test.path_secrets.len(), treesync.leaf_count() as usize);
 
-        // Construct a GroupContext object using the provided cipher_suite, group_id, epoch, and confirmed_transcript_hash, and the root tree hash of ratchet_tree
+        // Construct a GroupContext object using the provided cipher_suite, group_id,
+        // epoch, and confirmed_transcript_hash, and the root tree hash of ratchet_tree
         // TODO(#1279): Update GroupContext.
         let group_context = GroupContext::new(
             ciphersuite,
@@ -225,8 +226,9 @@ pub fn run_test_vector(test: TreeKemTest, provider: &impl OpenMlsProvider) {
 
         trace!("--------------------------------------------");
 
-        // Create a new `new_update_path`, using `ratchet_tree`, `leaves[i].signature_priv`,
-        // and the group context computed above. Note the resulting `new_commit_secret`.
+        // Create a new `new_update_path`, using `ratchet_tree`,
+        // `leaves[i].signature_priv`, and the group context computed above.
+        // Note the resulting `new_commit_secret`.
         let mut diff_after_kat = tree_after_kat.empty_diff();
 
         let (update_path, new_commit_secret) = {

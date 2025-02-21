@@ -84,9 +84,9 @@ impl MlsGroup {
         signer: &impl Signer,
     ) -> Result<CreateCommitResult, CreateCommitError> {
         // We  are building an external commit. This means we have to pull the
-        // framing parameters out of the create commit parameteres instead of the group. Since
-        // these are set together with the group mode, we can be sure that this is `Some(..)` (see
-        // [`TempBuilderCCPM0::external_commit`].
+        // framing parameters out of the create commit parameteres instead of the group.
+        // Since these are set together with the group mode, we can be sure that
+        // this is `Some(..)` (see [`TempBuilderCCPM0::external_commit`].
         let framing_parameters = params.framing_parameters.unwrap();
         let commit_type = CommitType::External(params.credential_with_key().clone());
 

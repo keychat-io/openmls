@@ -22,8 +22,9 @@ fn generate_key_package<Provider: OpenMlsProvider>(
         .clone()
 }
 
-/// This test checks if it is possible to bypass duplicate signature key detection in add proposals,
-/// when the same key package is used for each of the two add proposals.
+/// This test checks if it is possible to bypass duplicate signature key
+/// detection in add proposals, when the same key package is used for each of
+/// the two add proposals.
 /// - Alice creates a group
 /// - Alice adds Bob
 /// - Alice commits
@@ -172,8 +173,8 @@ fn mls_duplicate_signature_key_detection_same_key_package() {
         };
 
         // Ensure that the pending commit contains the correct number of proposals
-        // TODO: Determine whether the duplicate proposals should have been filtered out at this
-        // stage. See issue #1718
+        // TODO: Determine whether the duplicate proposals should have been filtered out
+        // at this stage. See issue #1718
         assert_eq!(pending_commit.queued_proposals().count(), 2);
 
         // ... and merge commit
@@ -194,8 +195,9 @@ fn mls_duplicate_signature_key_detection_same_key_package() {
     }
 }
 
-/// This test checks if it is possible to bypass duplicate signature key detection in add proposals,
-/// when a different key package is used for each of the two add proposals.
+/// This test checks if it is possible to bypass duplicate signature key
+/// detection in add proposals, when a different key package is used for each of
+/// the two add proposals.
 /// - Alice creates a group
 /// - Alice adds Bob
 /// - Alice commits
@@ -1572,7 +1574,8 @@ fn mls_group_ratchet_tree_extension(
     }
 }
 
-/// Test that the a group context extensions proposal is correctly applied when valid, and rejected when not.
+/// Test that the a group context extensions proposal is correctly applied when
+/// valid, and rejected when not.
 #[openmls_test]
 fn group_context_extensions_proposal(
     ciphersuite: Ciphersuite,
@@ -1651,8 +1654,8 @@ fn group_context_extensions_proposal(
             "expected error when committing to multiple group context extensions proposals",
         );
 
-    // === can't update required required_capabilities to extensions that existing group members
-    //       are not capable of
+    // === can't update required required_capabilities to extensions that existing
+    // group members       are not capable of
 
     // contains unsupported extension
     let new_extensions = Extensions::single(Extension::RequiredCapabilities(
@@ -1663,7 +1666,8 @@ fn group_context_extensions_proposal(
         .propose_group_context_extensions(provider, new_extensions, &alice_signer)
         .expect_err("expected an error building GCE proposal with bad required_capabilities");
 
-    // TODO: we need to test that processing a commit with multiple group context extensions
-    //       proposal also fails. however, we can't generate this commit, because our functions for
-    //       constructing commits does not permit it. See #1476
+    // TODO: we need to test that processing a commit with multiple group
+    // context extensions       proposal also fails. however, we can't
+    // generate this commit, because our functions for       constructing
+    // commits does not permit it. See #1476
 }

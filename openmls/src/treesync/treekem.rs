@@ -91,8 +91,8 @@ impl TreeSyncDiff<'_> {
     /// error if the `sender_leaf_index` is outside of the tree.
     ///
     /// ValSem203: Path secrets must decrypt correctly
-    /// ValSem204: Public keys from Path must be verified and match the private keys from the direct path
-    /// TODO #804
+    /// ValSem204: Public keys from Path must be verified and match the private
+    /// keys from the direct path TODO #804
     pub(crate) fn decrypt_path(
         &self,
         crypto: &impl OpenMlsCrypto,
@@ -108,8 +108,8 @@ impl TreeSyncDiff<'_> {
         let update_path_node = params
             .update_path
             .get(path_position)
-            // We know the update path has the right length through validation, therefore there must be an element at this position
-            // TODO #804
+            // We know the update path has the right length through validation, therefore there must
+            // be an element at this position TODO #804
             .ok_or_else(|| LibraryError::custom("Expected to find ciphertext in update path 1"))?;
 
         let (decryption_key, resolution_position) = self
@@ -124,8 +124,8 @@ impl TreeSyncDiff<'_> {
 
         let ciphertext = update_path_node
             .encrypted_path_secrets(resolution_position)
-            // We know the update path has the right length through validation, therefore there must be a ciphertext at this position
-            // TODO #804
+            // We know the update path has the right length through validation, therefore there must
+            // be a ciphertext at this position TODO #804
             .ok_or_else(|| LibraryError::custom("Expected to find ciphertext in update path 2"))?;
 
         // ValSem203: Path secrets must decrypt correctly
@@ -144,7 +144,8 @@ impl TreeSyncDiff<'_> {
             ParentNode::derive_path(crypto, ciphersuite, path_secret, common_path)?;
         // We now check that the public keys in the update path and in the
         // derived path match up.
-        // ValSem204: Public keys from Path must be verified and match the private keys from the direct path
+        // ValSem204: Public keys from Path must be verified and match the private keys
+        // from the direct path
         for (update_parent_node, (_, derived_parent_node)) in params
             .update_path
             .iter()

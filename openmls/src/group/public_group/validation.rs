@@ -164,15 +164,24 @@ impl PublicGroup {
     }
 
     /// Validate key uniqueness. This function implements the following checks:
-    ///  - ValSem101: Add Proposal: Signature public key in proposals must be unique among proposals & members
-    ///  - ValSem102: Add Proposal: Init key in proposals must be unique among proposals
-    ///  - ValSem103: Add Proposal: Encryption key in proposals must be unique among proposals & members
-    ///  - ValSem104: Add Proposal: Init key and encryption key must be different
-    ///  - ValSem110: Update Proposal: Encryption key must be unique among proposals & members
-    ///  - ValSem206: Commit: Path leaf node encryption key must be unique among proposals & members
-    ///  - ValSem207: Commit: Path encryption keys must be unique among proposals & members
-    ///  - [valn0111]: Verify that the following fields are unique among the members of the group: `signature_key`
-    ///  - [valn0112]: Verify that the following fields are unique among the members of the group: `encryption_key`
+    ///  - ValSem101: Add Proposal: Signature public key in proposals must be
+    ///    unique among proposals & members
+    ///  - ValSem102: Add Proposal: Init key in proposals must be unique among
+    ///    proposals
+    ///  - ValSem103: Add Proposal: Encryption key in proposals must be unique
+    ///    among proposals & members
+    ///  - ValSem104: Add Proposal: Init key and encryption key must be
+    ///    different
+    ///  - ValSem110: Update Proposal: Encryption key must be unique among
+    ///    proposals & members
+    ///  - ValSem206: Commit: Path leaf node encryption key must be unique among
+    ///    proposals & members
+    ///  - ValSem207: Commit: Path encryption keys must be unique among
+    ///    proposals & members
+    ///  - [valn0111]: Verify that the following fields are unique among the
+    ///    members of the group: `signature_key`
+    ///  - [valn0112]: Verify that the following fields are unique among the
+    ///    members of the group: `encryption_key`
     ///
     /// [valn0111]: https://validation.openmls.tech/#valn0111
     /// [valn0112]: https://validation.openmls.tech/#valn0112
@@ -323,16 +332,13 @@ impl PublicGroup {
         // ValSem106/ValSem109: Check the required capabilities of the add & update
         // proposals This includes the following checks:
         // - Are ciphersuite & version listed in the `Capabilities` Extension?
-        // - If a `RequiredCapabilitiesExtension` is present in the group: Is
-        //   this supported by the node?
+        // - If a `RequiredCapabilitiesExtension` is present in the group: Is this
+        //   supported by the node?
         // - Check that all extensions are contained in the capabilities.
-        // - Check that the capabilities contain the leaf node's credential
-        //   type.
-        // - Check that the credential type is supported by all members of the
-        //   group.
-        // - Check that the capabilities field of this LeafNode indicates
-        //   support for all the credential types currently in use by other
-        //   members.
+        // - Check that the capabilities contain the leaf node's credential type.
+        // - Check that the credential type is supported by all members of the group.
+        // - Check that the capabilities field of this LeafNode indicates support for
+        //   all the credential types currently in use by other members.
 
         // Extract the leaf nodes from the add & update proposals and validate them
         proposal_queue
@@ -349,7 +355,8 @@ impl PublicGroup {
     }
 
     /// Validate Add proposals. This function implements the following checks:
-    ///  - ValSem105: Add Proposal: Ciphersuite & protocol version must match the group
+    ///  - ValSem105: Add Proposal: Ciphersuite & protocol version must match
+    ///    the group
     pub(crate) fn validate_add_proposals(
         &self,
         proposal_queue: &ProposalQueue,
@@ -373,9 +380,12 @@ impl PublicGroup {
         Ok(())
     }
 
-    /// Validate Remove proposals. This function implements the following checks:
-    ///  - ValSem107: Remove Proposal: Removed member must be unique among proposals
-    ///  - ValSem108: Remove Proposal: Removed member must be an existing group member
+    /// Validate Remove proposals. This function implements the following
+    /// checks:
+    ///  - ValSem107: Remove Proposal: Removed member must be unique among
+    ///    proposals
+    ///  - ValSem108: Remove Proposal: Removed member must be an existing group
+    ///    member
     pub(crate) fn validate_remove_proposals(
         &self,
         proposal_queue: &ProposalQueue,
@@ -422,9 +432,12 @@ impl PublicGroup {
         Ok(())
     }
 
-    /// Validate Update proposals. This function implements the following checks:
-    ///  - ValSem111: Update Proposal: The sender of a full Commit must not include own update proposals
-    ///  - ValSem112: Update Proposal: The sender of a standalone update proposal must be of type member
+    /// Validate Update proposals. This function implements the following
+    /// checks:
+    ///  - ValSem111: Update Proposal: The sender of a full Commit must not
+    ///    include own update proposals
+    ///  - ValSem112: Update Proposal: The sender of a standalone update
+    ///    proposal must be of type member
     ///
     /// TODO: #133 This validation must be updated according to Sec. 13.2
     pub(crate) fn validate_update_proposals(
@@ -459,8 +472,10 @@ impl PublicGroup {
     /// This method implements the following checks:
     ///
     /// * ValSem401: The nonce of a PreSharedKeyID must have length KDF.Nh.
-    /// * ValSem402: PSK in proposal must be of type Resumption (with usage Application) or External.
-    /// * ValSem403: Proposal list must not contain multiple PreSharedKey proposals that reference the same PreSharedKeyID.
+    /// * ValSem402: PSK in proposal must be of type Resumption (with usage
+    ///   Application) or External.
+    /// * ValSem403: Proposal list must not contain multiple PreSharedKey
+    ///   proposals that reference the same PreSharedKeyID.
     pub(crate) fn validate_pre_shared_key_proposals(
         &self,
         proposal_queue: &ProposalQueue,
@@ -488,10 +503,14 @@ impl PublicGroup {
         Ok(())
     }
 
-    /// Validate constraints on an external commit. This function implements the following checks:
-    ///  - ValSem240: External Commit, inline Proposals: There MUST be at least one ExternalInit proposal.
-    ///  - ValSem241: External Commit, inline Proposals: There MUST be at most one ExternalInit proposal.
-    ///  - ValSem242: External Commit must only cover inline proposal in allowlist (ExternalInit, Remove, PreSharedKey)
+    /// Validate constraints on an external commit. This function implements the
+    /// following checks:
+    ///  - ValSem240: External Commit, inline Proposals: There MUST be at least
+    ///    one ExternalInit proposal.
+    ///  - ValSem241: External Commit, inline Proposals: There MUST be at most
+    ///    one ExternalInit proposal.
+    ///  - ValSem242: External Commit must only cover inline proposal in
+    ///    allowlist (ExternalInit, Remove, PreSharedKey)
     pub(super) fn validate_external_commit(
         &self,
         proposal_queue: &ProposalQueue,
@@ -501,15 +520,17 @@ impl PublicGroup {
             .filtered_by_type(ProposalType::ExternalInit)
             .count();
         if count_external_init_proposals == 0 {
-            // ValSem240: External Commit, inline Proposals: There MUST be at least one ExternalInit proposal.
+            // ValSem240: External Commit, inline Proposals: There MUST be at least one
+            // ExternalInit proposal.
             return Err(ExternalCommitValidationError::NoExternalInitProposals);
         } else if count_external_init_proposals > 1 {
-            // ValSem241: External Commit, inline Proposals: There MUST be at most one ExternalInit proposal.
+            // ValSem241: External Commit, inline Proposals: There MUST be at most one
+            // ExternalInit proposal.
             return Err(ExternalCommitValidationError::MultipleExternalInitProposals);
         }
 
-        // ValSem242: External Commit must only cover inline proposal in allowlist (ExternalInit, Remove, PreSharedKey)
-        // [valn0404](https://validation.openmls.tech/#valn0404)
+        // ValSem242: External Commit must only cover inline proposal in allowlist
+        // (ExternalInit, Remove, PreSharedKey) [valn0404](https://validation.openmls.tech/#valn0404)
         let contains_denied_proposal = proposal_queue.queued_proposals().any(|p| {
             let is_inline = p.proposal_or_ref_type() == ProposalOrRefType::Proposal;
             let is_allowed_type = matches!(
@@ -544,7 +565,8 @@ impl PublicGroup {
         let iter = proposal_queue.filtered_by_type(ProposalType::GroupContextExtensions);
 
         for (i, queued_proposal) in iter.enumerate() {
-            // There must at most be one group context extionsion proposal. Return an error if there are more
+            // There must at most be one group context extionsion proposal. Return an error
+            // if there are more
             if i > 0 {
                 return Err(GroupContextExtensionsProposalValidationError::TooManyGCEProposals);
             }
@@ -563,8 +585,9 @@ impl PublicGroup {
                     // use that. Otherwise, use the empty default one.
                     let required_capabilities = match required_capabilities_in_proposal {
                         Some(required_capabilities_new) => {
-                            // If a group context extensions proposal updates the required capabilities, we
-                            // need to check that these are satisfied for all existing members of the group.
+                            // If a group context extensions proposal updates the required
+                            // capabilities, we need to check that these
+                            // are satisfied for all existing members of the group.
                             self.check_extension_support(required_capabilities_new.extension_types()).map_err(|_| GroupContextExtensionsProposalValidationError::RequiredExtensionNotSupportedByAllMembers)?;
                             required_capabilities_new
                         }
@@ -659,11 +682,12 @@ impl PublicGroup {
 
         // https://validation.openmls.tech/#valn0106
         //
-        // Only leaf nodes in key packages contain lifetimes, so this will return None for other
-        // cases. Therefore we only check the lifetimes for leaf nodes in key packages.
+        // Only leaf nodes in key packages contain lifetimes, so this will return None
+        // for other cases. Therefore we only check the lifetimes for leaf nodes
+        // in key packages.
         //
-        // Some KATs use key packages that are expired by now. In order to run these tests, we
-        // provide a way to turn off this check.
+        // Some KATs use key packages that are expired by now. In order to run these
+        // tests, we provide a way to turn off this check.
         if !crate::skip_validation::is_disabled::leaf_node_lifetime() {
             if let Some(lifetime) = leaf_node.life_time() {
                 if !lifetime.is_valid() {
@@ -679,8 +703,8 @@ impl PublicGroup {
         // https://validation.openmls.tech/#valn0109
         // https://validation.openmls.tech/#valn0110
 
-        // These are done in validate_key_uniqueness, which is called in the context of changing
-        // this group:
+        // These are done in validate_key_uniqueness, which is called in the context of
+        // changing this group:
         //
         // https://validation.openmls.tech/#valn0111
         // https://validation.openmls.tech/#valn0112

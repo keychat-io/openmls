@@ -58,7 +58,7 @@ impl AeadKey {
 
     #[cfg(any(feature = "test-utils", test))]
     /// Get a slice to the key value.
-    pub(crate) fn as_slice(&self) -> &[u8] {
+    pub(crate) fn _as_slice(&self) -> &[u8] {
         self.value.as_slice()
     }
 
@@ -106,8 +106,9 @@ impl AeadNonce {
 
     /// Generate a new random nonce.
     ///
-    /// **NOTE: This has to wait until it can acquire the lock to get randomness!**
-    /// TODO: This panics if another thread holding the rng panics.
+    /// **NOTE: This has to wait until it can acquire the lock to get
+    /// randomness!** TODO: This panics if another thread holding the rng
+    /// panics.
     #[cfg(test)]
     pub(crate) fn random(rng: &impl OpenMlsRand) -> Self {
         Self(rng.random_array().expect("Not enough entropy."))
@@ -115,7 +116,7 @@ impl AeadNonce {
 
     /// Get a slice to the nonce value.
     #[cfg(any(feature = "test-utils", test))]
-    pub(crate) fn as_slice(&self) -> &[u8] {
+    pub(crate) fn _as_slice(&self) -> &[u8] {
         &self.0
     }
 
@@ -150,31 +151,5 @@ pub(crate) fn aead_key_gen(
             .random_vec(32)
             .expect("An unexpected error occurred.")
             .into(),
-    }
-}
-
-#[cfg(test)]
-mod unit_tests {
-
-    use super::*;
-
-    /// Make sure that xoring works by xoring a nonce with a reuse guard, testing if
-    /// it has changed, xoring it again and testing that it's back in its original
-    /// state.
-    #[openmls_test::openmls_test]
-    fn test_xor() {
-        let reuse_guard: ReuseGuard =
-            ReuseGuard::try_from_random(provider.rand()).expect("An unexpected error occurred.");
-        let original_nonce = AeadNonce::random(provider.rand());
-        let xored_once = original_nonce.clone().xor_with_reuse_guard(&reuse_guard);
-        assert_ne!(
-            original_nonce, xored_once,
-            "xoring with reuse_guard did not change the nonce"
-        );
-        let xored_twice = xored_once.xor_with_reuse_guard(&reuse_guard);
-        assert_eq!(
-            original_nonce, xored_twice,
-            "xoring twice changed the original value"
-        );
     }
 }

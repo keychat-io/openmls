@@ -27,7 +27,7 @@ use crate::{
 ///
 /// The [`GroupContext`] is a state object maintained which summarizes the group
 /// state agreed upon by each member of the group.
-///```
+/// ```
 #[derive(
     Debug,
     Clone,

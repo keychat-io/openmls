@@ -3,7 +3,8 @@
 //! This is an implementation of the [`OpenMlsProvider`] trait to use with
 //! OpenMLS.
 
-use openmls_rust_crypto::{MemoryStorage, RustCrypto};
+use openmls_memory_storage::MemoryStorage;
+use openmls_rust_crypto::RustCrypto;
 use openmls_traits::OpenMlsProvider;
 
 #[derive(Default, Debug)]

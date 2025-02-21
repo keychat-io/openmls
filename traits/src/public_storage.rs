@@ -65,7 +65,8 @@ pub trait PublicStorageProvider<const VERSION: u16> {
         proposal: &QueuedProposal,
     ) -> Result<(), Self::PublicError>;
 
-    /// Returns all queued proposals for the group with group id `group_id`, or an empty vector of none are stored.
+    /// Returns all queued proposals for the group with group id `group_id`, or
+    /// an empty vector of none are stored.
     fn queued_proposals<
         GroupId: crate::storage::traits::GroupId<VERSION>,
         ProposalRef: crate::storage::traits::ProposalRef<VERSION>,
@@ -93,7 +94,8 @@ pub trait PublicStorageProvider<const VERSION: u16> {
         group_id: &GroupId,
     ) -> Result<Option<GroupContext>, Self::PublicError>;
 
-    /// Returns the interim transcript hash for the group with group id `group_id`.
+    /// Returns the interim transcript hash for the group with group id
+    /// `group_id`.
     fn interim_transcript_hash<
         GroupId: crate::storage::traits::GroupId<VERSION>,
         InterimTranscriptHash: crate::storage::traits::InterimTranscriptHash<VERSION>,
@@ -135,7 +137,8 @@ pub trait PublicStorageProvider<const VERSION: u16> {
         group_id: &GroupId,
     ) -> Result<(), Self::PublicError>;
 
-    /// Removes an individual proposal from the proposal queue of the group with the provided id
+    /// Removes an individual proposal from the proposal queue of the group with
+    /// the provided id
     fn remove_proposal<
         GroupId: crate::storage::traits::GroupId<VERSION>,
         ProposalRef: crate::storage::traits::ProposalRef<VERSION>,

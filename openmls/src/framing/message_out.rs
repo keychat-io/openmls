@@ -150,7 +150,8 @@ impl MlsMessageOut {
         }
     }
 
-    /// Serializes the message to a byte vector. Returns [`MlsMessageError::UnableToEncode`] on failure.
+    /// Serializes the message to a byte vector. Returns
+    /// [`MlsMessageError::UnableToEncode`] on failure.
     pub fn to_bytes(&self) -> Result<Vec<u8>, MlsMessageError> {
         self.tls_serialize_detached()
             .map_err(|_| MlsMessageError::UnableToEncode)

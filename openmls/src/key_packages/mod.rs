@@ -29,28 +29,22 @@
 //! package bundle can be created as follows:
 //!
 //! ```
-//! use openmls::{prelude::{*, tls_codec::*}};
-//! use openmls_rust_crypto::OpenMlsRustCrypto;
+//! use openmls::prelude::{tls_codec::*, *};
 //! use openmls_basic_credential::SignatureKeyPair;
+//! use openmls_rust_crypto::OpenMlsRustCrypto;
 //!
 //! let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 //! let provider = OpenMlsRustCrypto::default();
 //!
 //! let credential = BasicCredential::new("identity".into());
-//! let signer =
-//!     SignatureKeyPair::new(ciphersuite.signature_algorithm())
-//!         .expect("Error generating a signature key pair.");
+//! let signer = SignatureKeyPair::new(ciphersuite.signature_algorithm())
+//!     .expect("Error generating a signature key pair.");
 //! let credential_with_key = CredentialWithKey {
 //!     credential: credential.into(),
 //!     signature_key: signer.public().into(),
 //! };
 //! let key_package = KeyPackage::builder()
-//!     .build(
-//!         ciphersuite,
-//!         &provider,
-//!         &signer,
-//!         credential_with_key,
-//!     )
+//!     .build(ciphersuite, &provider, &signer, credential_with_key)
 //!     .unwrap();
 //! ```
 //!
@@ -62,7 +56,7 @@
 //! as follows;
 //!
 //! ```
-//! use openmls::prelude::{*, tls_codec::*};
+//! use openmls::prelude::{tls_codec::*, *};
 //! use openmls::test_utils::hex_to_bytes;
 //! use openmls_rust_crypto::OpenMlsRustCrypto;
 //!
@@ -70,7 +64,7 @@
 //! let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 //!
 //! let key_package_bytes = hex_to_bytes(
-//!         "0001000120D4F26FCA6EF6B1CA2FDD8DCAA501730FB003323AD8C781490B94782771\
+//!     "0001000120D4F26FCA6EF6B1CA2FDD8DCAA501730FB003323AD8C781490B94782771\
 //!         B22216208E9BF17CE632EC753A9BFC624F275AA745ACD7316A5CF18B8E39CE71A80EE\
 //!         137205639176E415B378BA54B9E7C678FFAA860676CEFEDFA0DD3FF692F20AC7E2632\
 //!         0001086964656E74697479020001060001000200030200010C0001000200030004000\
@@ -78,7 +72,8 @@
 //!         B215D811BADB0BBBD78B582D42E5C3672085699DCA5F90DAA57BB74A3A973789E7006\
 //!         887FCE85F0E64C19C1F26C28B5752B3C3312FF3040040407B5A96167512061E78414F\
 //!         E3F29B89FF2A954CB8E0A6E976EA039E0A1A0AB91B80664BDDC62BC8CBE64BC9242C4\
-//!         CDC33F56A10E425A384AED029C23E1D467C0E");
+//!         CDC33F56A10E425A384AED029C23E1D467C0E",
+//! );
 //!
 //! let key_package_in = KeyPackageIn::tls_deserialize(&mut key_package_bytes.as_slice())
 //!     .expect("Could not deserialize KeyPackage");
@@ -250,7 +245,8 @@ impl From<HpkePublicKey> for InitKey {
 impl KeyPackage {
     /// Create a key package builder.
     ///
-    /// This is provided for convenience. You can also use [`KeyPackageBuilder::new`].
+    /// This is provided for convenience. You can also use
+    /// [`KeyPackageBuilder::new`].
     pub fn builder() -> KeyPackageBuilder {
         KeyPackageBuilder::new()
     }
@@ -404,9 +400,9 @@ impl KeyPackage {
 
     /// Get the lifetime of the KeyPackage
     pub fn life_time(&self) -> &Lifetime {
-        // Leaf nodes contain a lifetime if an only if they are inside a KeyPackage. Since we are
-        // in a KeyPackage, this can never be None and unwrap is safe.
-        // TODO: get rid of the unwrap, see https://github.com/openmls/openmls/issues/1663.
+        // Leaf nodes contain a lifetime if an only if they are inside a KeyPackage.
+        // Since we are in a KeyPackage, this can never be None and unwrap is
+        // safe. TODO: get rid of the unwrap, see https://github.com/openmls/openmls/issues/1663.
         self.payload.leaf_node.life_time().unwrap()
     }
 }
@@ -453,7 +449,8 @@ impl KeyPackageBuilder {
         self
     }
 
-    /// Mark the key package as a last-resort key package via a [`LastResortExtension`].
+    /// Mark the key package as a last-resort key package via a
+    /// [`LastResortExtension`].
     pub fn mark_as_last_resort(mut self) -> Self {
         self.last_resort = true;
         self
@@ -559,7 +556,8 @@ pub struct KeyPackageBundle {
 
 // Public `KeyPackageBundle` functions.
 impl KeyPackageBundle {
-    /// Get a reference to the public part of this bundle, i.e. the [`KeyPackage`].
+    /// Get a reference to the public part of this bundle, i.e. the
+    /// [`KeyPackage`].
     pub fn key_package(&self) -> &KeyPackage {
         &self.key_package
     }

@@ -12,7 +12,8 @@ use crate::types::{
 pub trait OpenMlsCrypto: Send + Sync {
     /// Check whether the [`Ciphersuite`] is supported by the backend or not.
     ///
-    /// Returns a [`CryptoError::UnsupportedCiphersuite`] if the ciphersuite is not supported.
+    /// Returns a [`CryptoError::UnsupportedCiphersuite`] if the ciphersuite is
+    /// not supported.
     fn supports(&self, ciphersuite: Ciphersuite) -> Result<(), CryptoError>;
 
     /// Returns the list of supported [`Ciphersuite`]s.
@@ -30,8 +31,8 @@ pub trait OpenMlsCrypto: Send + Sync {
 
     /// HKDF expand.
     ///
-    /// Returns an error if the [`HashType`] is not supported or the output length
-    /// is too long.
+    /// Returns an error if the [`HashType`] is not supported or the output
+    /// length is too long.
     fn hkdf_expand(
         &self,
         hash_type: HashType,

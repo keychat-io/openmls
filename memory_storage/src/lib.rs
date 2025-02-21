@@ -28,7 +28,8 @@ impl Clone for MemoryStorage {
     }
 }
 
-// For testing (KATs in particular) we want to serialize and deserialize the storage
+// For testing (KATs in particular) we want to serialize and deserialize the
+// storage
 #[cfg(feature = "test-utils")]
 impl MemoryStorage {
     pub fn serialize(&self, w: &mut Vec<u8>) -> std::io::Result<usize> {

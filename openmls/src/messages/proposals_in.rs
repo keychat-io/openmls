@@ -122,7 +122,8 @@ impl ProposalIn {
 
 /// Add Proposal.
 ///
-/// An Add proposal requests that a client with a specified [`KeyPackage`] be added to the group.
+/// An Add proposal requests that a client with a specified [`KeyPackage`] be
+/// added to the group.
 ///
 /// ```c
 /// // draft-ietf-mls-protocol-17
@@ -168,8 +169,9 @@ impl AddProposalIn {
 
 /// Update Proposal.
 ///
-/// An Update proposal is a similar mechanism to [`AddProposalIn`] with the distinction that it
-/// replaces the sender's leaf node instead of adding a new leaf to the tree.
+/// An Update proposal is a similar mechanism to [`AddProposalIn`] with the
+/// distinction that it replaces the sender's leaf node instead of adding a new
+/// leaf to the tree.
 ///
 /// ```c
 /// // draft-ietf-mls-protocol-17

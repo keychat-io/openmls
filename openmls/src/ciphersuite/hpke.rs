@@ -1,8 +1,9 @@
 //! ### Public-Key Encryption
 //!
-//! As with signing, MLS includes a label and context in encryption operations to
-//! avoid confusion between ciphertexts produced for different purposes.  Encryption
-//! and decryption including this label and context are done as follows:
+//! As with signing, MLS includes a label and context in encryption operations
+//! to avoid confusion between ciphertexts produced for different purposes.
+//! Encryption and decryption including this label and context are done as
+//! follows:
 //!
 //! ```text
 //! EncryptWithLabel(PublicKey, Label, Context, Plaintext) =
@@ -31,8 +32,8 @@
 //! Here, the functions `SealBase` and `OpenBase` are defined RFC9180, using the
 //! HPKE algorithms specified by the group's ciphersuite.  If MLS extensions
 //! require HPKE encryption operations, they should re-use the EncryptWithLabel
-//! construction, using a distinct label.  To avoid collisions in these labels, an
-//! IANA registry is defined in mls-public-key-encryption-labels.
+//! construction, using a distinct label.  To avoid collisions in these labels,
+//! an IANA registry is defined in mls-public-key-encryption-labels.
 
 use openmls_traits::{
     crypto::OpenMlsCrypto,
@@ -46,7 +47,8 @@ use super::LABEL_PREFIX;
 /// HPKE labeled encryption errors.
 #[derive(Error, Debug, PartialEq, Clone)]
 pub(crate) enum Error {
-    /// Error while serializing content. This should only happen if a bounds check was missing.
+    /// Error while serializing content. This should only happen if a bounds
+    /// check was missing.
     #[error(
         "Error while serializing content. This should only happen if a bounds check was missing."
     )]
@@ -76,7 +78,8 @@ pub struct EncryptContext {
 }
 
 impl EncryptContext {
-    /// Create a new [`EncryptContext`] from a string label and the content bytes.
+    /// Create a new [`EncryptContext`] from a string label and the content
+    /// bytes.
     pub fn new(label: &str, context: VLBytes) -> Self {
         let label_string = LABEL_PREFIX.to_owned() + label;
         let label = label_string.as_bytes().into();

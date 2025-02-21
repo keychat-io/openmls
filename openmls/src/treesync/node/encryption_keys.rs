@@ -165,9 +165,9 @@ impl EncryptionKeyPair {
         store.write_encryption_key_pair(self.public_key(), self)
     }
 
-    /// Read the [`EncryptionKeyPair`] from the key store of the `provider`. This
-    /// function is meant to read standalone keypairs, not ones that are
-    /// already in use with an MLS group.
+    /// Read the [`EncryptionKeyPair`] from the key store of the `provider`.
+    /// This function is meant to read standalone keypairs, not ones that
+    /// are already in use with an MLS group.
     ///
     /// This must only be used for encryption key pairs that are generated for
     /// update leaf nodes. All other encryption key pairs are stored as part

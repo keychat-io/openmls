@@ -7,8 +7,8 @@ const CUSTOM_EXTENSION_TYPE_ID: u16 = 0xff00;
 const CUSTOM_EXTENSION_TYPE: ExtensionType = ExtensionType::Unknown(CUSTOM_EXTENSION_TYPE_ID);
 
 /// An example where we add an unknown extension to every commit in the group
-/// In this example, the extension we commit is the list of "user names" of the clients in the
-/// group.
+/// In this example, the extension we commit is the list of "user names" of the
+/// clients in the group.
 #[openmls_test]
 fn opaque_extension() {
     // ## First we need to set up the clients.
@@ -26,7 +26,8 @@ fn opaque_extension() {
     );
 
     // Generate key packages for Bob and Charlie so they can be added later.
-    // Note that `generate_key_package` also sets the capability for our custom extension type.
+    // Note that `generate_key_package` also sets the capability for our custom
+    // extension type.
     let bob_key_package = generate_key_package(
         ciphersuite,
         bob_credential.clone(),
@@ -123,8 +124,8 @@ fn opaque_extension() {
     alice_group.merge_pending_commit(provider).unwrap();
 
     // ## Let bob build the group
-    // Get the info needed to build the group - would be part of welcome and group info in the real
-    // world
+    // Get the info needed to build the group - would be part of welcome and group
+    // info in the real world
     let join_config = alice_group.configuration();
     let tree = alice_group.export_ratchet_tree();
 

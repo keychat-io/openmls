@@ -1,6 +1,7 @@
 //! # MLS group errors
 //!
-//! This module contains errors that originate at lower levels and are partially re-exported in errors thrown by functions of the `MlsGroup` API.
+//! This module contains errors that originate at lower levels and are partially
+//! re-exported in errors thrown by functions of the `MlsGroup` API.
 
 use thiserror::Error;
 
@@ -38,7 +39,8 @@ pub enum WelcomeError<StorageError> {
     /// No joiner secret found in the Welcome message.
     #[error("No joiner secret found in the Welcome message.")]
     JoinerSecretNotFound,
-    /// No ratchet tree available to build initial tree after receiving a Welcome message.
+    /// No ratchet tree available to build initial tree after receiving a
+    /// Welcome message.
     #[error("No ratchet tree available to build initial tree after receiving a Welcome message.")]
     MissingRatchetTree,
     /// The computed confirmation tag does not match the expected one.
@@ -77,17 +79,20 @@ pub enum WelcomeError<StorageError> {
     /// No matching key package was found in the key store.
     #[error("No matching key package was found in the key store.")]
     NoMatchingKeyPackage,
-    /// This error indicates the public tree is invalid. See [`PublicTreeError`] for more details.
+    /// This error indicates the public tree is invalid. See [`PublicTreeError`]
+    /// for more details.
     #[error(transparent)]
     PublicTreeError(#[from] PublicTreeError),
     /// This error indicates the public tree is invalid. See
     /// [`CreationFromExternalError`] for more details.
     #[error(transparent)]
     PublicGroupError(#[from] CreationFromExternalError<StorageError>),
-    /// This error indicates the leaf node is invalid. See [`LeafNodeValidationError`] for more details.
+    /// This error indicates the leaf node is invalid. See
+    /// [`LeafNodeValidationError`] for more details.
     #[error(transparent)]
     LeafNodeValidation(#[from] LeafNodeValidationError),
-    /// This error indicates that an error occurred while reading or writing from/to storage.
+    /// This error indicates that an error occurred while reading or writing
+    /// from/to storage.
     #[error("An error occurred when querying storage")]
     StorageError(StorageError),
 }
@@ -234,7 +239,8 @@ pub enum CreateCommitError {
     /// Credential is missing from external commit.
     #[error("Credential is missing from external commit.")]
     MissingCredential,
-    /// This error indicates the public tree is invalid. See [`PublicTreeError`] for more details.
+    /// This error indicates the public tree is invalid. See [`PublicTreeError`]
+    /// for more details.
     #[error(transparent)]
     PublicTreeError(#[from] PublicTreeError),
     /// See [`InvalidExtensionError`] for more details.
@@ -273,13 +279,17 @@ pub enum ValidationError {
     /// Message epoch differs from the group's epoch.
     #[error("Message epoch differs from the group's epoch.")]
     WrongEpoch,
-    /// The PublicMessage is not a Commit despite the sender begin of type [NewMemberCommit](crate::prelude::Sender::NewMemberCommit).
+    /// The PublicMessage is not a Commit despite the sender begin of type
+    /// [NewMemberCommit](crate::prelude::Sender::NewMemberCommit).
     #[error("The PublicMessage is not a Commit despite the sender begin of type NewMemberCommit.")]
     NotACommit,
-    /// The PublicMessage is not an External Add Proposal despite the sender begin of type [NewMemberProposal](crate::prelude::Sender::NewMemberProposal).
+    /// The PublicMessage is not an External Add Proposal despite the sender
+    /// begin of type
+    /// [NewMemberProposal](crate::prelude::Sender::NewMemberProposal).
     #[error("The PublicMessage is not an external Add proposal despite the sender begin of type NewMemberProposal.")]
     NotAnExternalAddProposal,
-    /// The Commit doesn't have a path despite the sender being of type NewMemberCommit.
+    /// The Commit doesn't have a path despite the sender being of type
+    /// NewMemberCommit.
     #[error("The Commit doesn't have a path despite the sender being of type NewMemberCommit.")]
     NoPath,
     /// The PublicMessage contains an application message but was not encrypted.
@@ -312,7 +322,8 @@ pub enum ValidationError {
     /// The message is from an epoch too far in the past.
     #[error("The message is from an epoch too far in the past.")]
     NoPastEpochData,
-    /// The provided external sender is not authorized to send external proposals
+    /// The provided external sender is not authorized to send external
+    /// proposals
     #[error("The provided external sender is not authorized to send external proposals")]
     UnauthorizedExternalSender,
     /// The group doesn't contain external senders extension.
@@ -336,12 +347,14 @@ pub enum ValidationError {
     /// The Commit includes update proposals from the committer.
     #[error("The Commit includes update proposals from the committer.")]
     CommitterIncludedOwnUpdate,
-    /// The ciphersuite in the KeyPackage of the Add proposal does not match the group context.
+    /// The ciphersuite in the KeyPackage of the Add proposal does not match the
+    /// group context.
     #[error(
         "The ciphersuite in the KeyPackage of the Add proposal does not match the group context."
     )]
     InvalidAddProposalCiphersuite,
-    /// Cannot decrypt own messages because the necessary key has been deleted according to the deletion schedule.
+    /// Cannot decrypt own messages because the necessary key has been deleted
+    /// according to the deletion schedule.
     #[error("Cannot decrypt own messages.")]
     CannotDecryptOwnMessage,
     /// See [`ExternalCommitValidationError`] for more details.
@@ -385,7 +398,8 @@ pub enum ProposalValidationError {
     /// The capabilities of the add proposal are insufficient for this group.
     #[error("The capabilities of the add proposal are insufficient for this group.")]
     InsufficientCapabilities,
-    /// The add proposal's ciphersuite or protocol version do not match the ones in the group context.
+    /// The add proposal's ciphersuite or protocol version do not match the ones
+    /// in the group context.
     #[error(
         "The add proposal's ciphersuite or protocol version do not match the ones in the group context."
     )]
@@ -399,7 +413,8 @@ pub enum ProposalValidationError {
     /// See [`LeafNodeValidationError`] for more details.
     #[error(transparent)]
     LeafNodeValidation(#[from] LeafNodeValidationError),
-    /// Regular Commits may not contain ExternalInit proposals, but one was found
+    /// Regular Commits may not contain ExternalInit proposals, but one was
+    /// found
     #[error("Found ExternalInit proposal in regular commit")]
     ExternalInitProposalInRegularCommit,
 }
@@ -531,7 +546,8 @@ pub enum GroupContextExtensionsProposalValidationError {
     #[error(transparent)]
     LibraryError(#[from] LibraryError),
 
-    /// The new extension types in required capabilties contails extensions that are not supported by all group members.
+    /// The new extension types in required capabilties contails extensions that
+    /// are not supported by all group members.
     #[error(
         "The new required capabilties contain extension types that are not supported by all group members."
     )]
@@ -540,14 +556,15 @@ pub enum GroupContextExtensionsProposalValidationError {
     #[error("Proposal changes the immutable metadata extension, which is not allowed.")]
     ChangedImmutableMetadata,
 
-    /// The new extension types in required capabilties contails extensions that are not supported by all group members.
+    /// The new extension types in required capabilties contails extensions that
+    /// are not supported by all group members.
     #[error(
         "The new required capabilties contain extension types that are not supported by all group members."
     )]
     RequiredExtensionNotSupportedByAllMembers,
 
-    /// An extension in the group context extensions is not listed in the required capabilties'
-    /// extension types.
+    /// An extension in the group context extensions is not listed in the
+    /// required capabilties' extension types.
     #[error(
         "An extension in the group context extensions is not listed in the required capabilties' extension types."
     )]

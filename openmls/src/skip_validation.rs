@@ -1,14 +1,15 @@
-//! This module contains helpers for skipping validation. It is built such that setting the flag to
-//! disable validation can only by set when the "test-utils" feature is enabled.
-//! This module is used in two places, and they use different parts of it.
-//! Code that performs validation and wants to check whether a check is disabled only uses the
-//! [`is_disabled`] submodule. It contains getter functions that read the current state of the
-//! flag.
-//! Test code that disables checks uses the code in the [`checks`] submodule. It contains a module
-//! for each check that can be disabled, and a getter for a handle, protected by a [`Mutex`]. This
-//! is done because the flag state is shared between tests, and tests that set and unset the same
-//! checks are not safe to run concurrently.
-//! For example, a test could cann [`checks::confirmation_tag::handle`] to get a handle to disable
+//! This module contains helpers for skipping validation. It is built such that
+//! setting the flag to disable validation can only by set when the "test-utils"
+//! feature is enabled. This module is used in two places, and they use
+//! different parts of it. Code that performs validation and wants to check
+//! whether a check is disabled only uses the [`is_disabled`] submodule. It
+//! contains getter functions that read the current state of the flag.
+//! Test code that disables checks uses the code in the [`checks`] submodule. It
+//! contains a module for each check that can be disabled, and a getter for a
+//! handle, protected by a [`Mutex`]. This is done because the flag state is
+//! shared between tests, and tests that set and unset the same checks are not
+//! safe to run concurrently. For example, a test could cann
+//! [`checks::confirmation_tag::handle`] to get a handle to disable
 //! and re-enable the validation of confirmation tags.
 
 pub(crate) mod is_disabled {
@@ -26,11 +27,13 @@ pub(crate) mod is_disabled {
 #[cfg(test)]
 use std::sync::atomic::AtomicBool;
 
-/// Contains a reference to a flag. Provides convenience functions to set and clear the flag.
+/// Contains a reference to a flag. Provides convenience functions to set and
+/// clear the flag.
 #[cfg(test)]
 #[derive(Clone, Copy, Debug)]
 pub struct SkipValidationHandle {
-    // we keep this field so we can see which handle this is when printing it. we don't need it otherwise
+    // we keep this field so we can see which handle this is when printing it. we don't need it
+    // otherwise
     #[allow(dead_code)]
     name: &'static str,
     flag: &'static AtomicBool,
@@ -62,7 +65,8 @@ pub(crate) mod checks {
             static MUTEX: Lazy<Mutex<SkipValidationHandle>> =
                 Lazy::new(|| Mutex::new(SkipValidationHandle::new_confirmation_tag_handle()));
 
-            /// Takes the mutex and returns the control handle to the validation skipper
+            /// Takes the mutex and returns the control handle to the validation
+            /// skipper
             pub(crate) fn handle() -> MutexGuard<'static, SkipValidationHandle> {
                 MUTEX.lock().unwrap_or_else(|e| {
                     panic!("error taking skip-validation mutex for '{NAME}': {e}")
@@ -84,7 +88,8 @@ pub(crate) mod checks {
     pub(crate) mod leaf_node_lifetime {
         use std::sync::atomic::AtomicBool;
 
-        /// A way of disabling verification and validation of leaf node lifetimes.
+        /// A way of disabling verification and validation of leaf node
+        /// lifetimes.
         pub(in crate::skip_validation) static FLAG: AtomicBool = AtomicBool::new(false);
 
         #[cfg(test)]
@@ -104,7 +109,8 @@ pub(crate) mod checks {
             static MUTEX: Lazy<Mutex<SkipValidationHandle>> =
                 Lazy::new(|| Mutex::new(SkipValidationHandle::new_leaf_node_lifetime_handle()));
 
-            /// Takes the mutex and returns the control handle to the validation skipper
+            /// Takes the mutex and returns the control handle to the validation
+            /// skipper
             pub(crate) fn handle() -> MutexGuard<'static, SkipValidationHandle> {
                 MUTEX.lock().unwrap_or_else(|e| {
                     panic!("error taking skip-validation mutex for '{NAME}': {e}")

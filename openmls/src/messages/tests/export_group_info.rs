@@ -7,7 +7,8 @@ use crate::{
     prelude::MlsMessageBodyOut,
 };
 
-/// Tests the creation of an [UnverifiedGroupInfo] and verifies it was correctly signed.
+/// Tests the creation of an [UnverifiedGroupInfo] and verifies it was correctly
+/// signed.
 #[openmls_test::openmls_test]
 fn export_group_info() {
     // Alice creates a group

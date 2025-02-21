@@ -76,7 +76,8 @@ pub struct PublicGroup {
     confirmation_tag: ConfirmationTag,
 }
 
-/// This is a wrapper type, because we can't implement the storage traits on `Vec<u8>`.
+/// This is a wrapper type, because we can't implement the storage traits on
+/// `Vec<u8>`.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InterimTranscriptHash(pub Vec<u8>);
 
@@ -108,7 +109,8 @@ impl PublicGroup {
         })
     }
 
-    /// Create a [`PublicGroup`] instance to start tracking an existing MLS group.
+    /// Create a [`PublicGroup`] instance to start tracking an existing MLS
+    /// group.
     ///
     /// This function performs basic validation checks and returns an error if
     /// one of the checks fails. See [`CreationFromExternalError`] for more
@@ -148,9 +150,10 @@ impl PublicGroup {
             leaf_node.validate_locally()?;
 
             // Check that no two nodes share an encryption key.
-            // This is a bit stronger than what the spec requires: It requires that the encryption keys
-            // in parent nodes and unmerged leaves must be unique. Here, we check that all encryption
-            // keys (all leaf nodes, incl. unmerged and all parent nodes) are unique.
+            // This is a bit stronger than what the spec requires: It requires that the
+            // encryption keys in parent nodes and unmerged leaves must be
+            // unique. Here, we check that all encryption keys (all leaf nodes,
+            // incl. unmerged and all parent nodes) are unique.
             //
             // https://validation.openmls.tech/#valn1410
             if !encryption_keys.insert(leaf_node.encryption_key()) {
@@ -160,7 +163,8 @@ impl PublicGroup {
             Ok(())
         })?;
 
-        // For each non-empty parent node and each entry in the node's unmerged_leaves field:
+        // For each non-empty parent node and each entry in the node's unmerged_leaves
+        // field:
         treesync
             .full_parents()
             .try_for_each(|(parent_index, parent_node)| {
@@ -328,7 +332,8 @@ impl PublicGroup {
     /// [`PublicGroup`].
     ///
     /// **NOTE:** The caller must ensure that the group context in the `diff` is
-    ///           updated before calling this function with `update_group_context`.
+    ///           updated before calling this function with
+    /// `update_group_context`.
     pub(crate) fn merge_diff(&mut self, diff: StagedPublicGroupDiff) {
         self.treesync.merge_diff(diff.staged_diff);
         self.group_context = diff.group_context;
@@ -376,7 +381,8 @@ impl PublicGroup {
         self.treesync().export_ratchet_tree()
     }
 
-    /// Add the [`QueuedProposal`] to the [`PublicGroup`]s internal [`ProposalStore`].
+    /// Add the [`QueuedProposal`] to the [`PublicGroup`]s internal
+    /// [`ProposalStore`].
     pub fn add_proposal<Storage: PublicStorageProvider>(
         &mut self,
         storage: &Storage,
@@ -387,7 +393,8 @@ impl PublicGroup {
         Ok(())
     }
 
-    /// Remove the Proposal with the given [`ProposalRef`] from the [`PublicGroup`]s internal [`ProposalStore`].
+    /// Remove the Proposal with the given [`ProposalRef`] from the
+    /// [`PublicGroup`]s internal [`ProposalStore`].
     pub fn remove_proposal<Storage: PublicStorageProvider>(
         &mut self,
         storage: &Storage,
@@ -444,8 +451,8 @@ impl PublicGroup {
         &self.confirmation_tag
     }
 
-    /// Return a reference to the leaf at the given `LeafNodeIndex` or `None` if the
-    /// leaf is blank.
+    /// Return a reference to the leaf at the given `LeafNodeIndex` or `None` if
+    /// the leaf is blank.
     pub fn leaf(&self, leaf_index: LeafNodeIndex) -> Option<&LeafNode> {
         self.treesync().leaf(leaf_index)
     }
@@ -465,8 +472,9 @@ impl PublicGroup {
         self.treesync().owned_encryption_keys(leaf_index)
     }
 
-    /// Stores the [`PublicGroup`] to storage. Called from methods creating a new group and mutating an
-    /// existing group, both inside [`PublicGroup`] and in [`MlsGroup`].
+    /// Stores the [`PublicGroup`] to storage. Called from methods creating a
+    /// new group and mutating an existing group, both inside
+    /// [`PublicGroup`] and in [`MlsGroup`].
     ///
     /// [`MlsGroup`]: crate::group::MlsGroup
     pub(crate) fn store<Storage: PublicStorageProvider>(

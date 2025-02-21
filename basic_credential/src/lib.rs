@@ -20,8 +20,8 @@ use tls_codec::{TlsDeserialize, TlsDeserializeBytes, TlsSerialize, TlsSize};
 
 /// A signature key pair for the basic credential.
 ///
-/// This can be used as keys to implement the MLS basic credential. It is a simple
-/// private and public key pair with corresponding signature scheme.
+/// This can be used as keys to implement the MLS basic credential. It is a
+/// simple private and public key pair with corresponding signature scheme.
 #[derive(
     TlsSerialize, TlsSize, TlsDeserialize, TlsDeserializeBytes, serde::Serialize, serde::Deserialize,
 )]

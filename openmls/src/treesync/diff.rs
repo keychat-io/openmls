@@ -303,11 +303,11 @@ impl TreeSyncDiff<'_> {
         leaf_index: LeafNodeIndex,
         leaf_node_params: UpdateLeafNodeParams,
     ) -> Result<UpdatePathResult, TreeSyncAddLeaf> {
-        // For External Commits, we temporarily add a placeholder leaf node to the tree, because it
-        // might be required to make the tree grow to the right size. If we
-        // don't do that, calculating the direct path might fail. It's important
-        // to not do anything with the value of that leaf until it has been
-        // replaced.
+        // For External Commits, we temporarily add a placeholder leaf node to the tree,
+        // because it might be required to make the tree grow to the right size.
+        // If we don't do that, calculating the direct path might fail. It's
+        // important to not do anything with the value of that leaf until it has
+        // been replaced.
         if let CommitType::External(_) = commit_type {
             let leaf_node = LeafNode::new_placeholder();
             self.add_leaf(leaf_node)?;
@@ -421,7 +421,8 @@ impl TreeSyncDiff<'_> {
         // Compute the parent hash.
         let parent_hash = self.set_parent_hashes(crypto, ciphersuite, &mut path, leaf_index)?;
 
-        // While probably not necessary, the spec mandates we blank the direct path nodes
+        // While probably not necessary, the spec mandates we blank the direct path
+        // nodes
         let direct_path_nodes = self.diff.direct_path(leaf_index);
         for node in direct_path_nodes {
             *self.diff.parent_mut(node) = TreeSyncParentNode::blank();
@@ -762,7 +763,8 @@ impl TreeSyncDiff<'_> {
     /// Returns the position of the subtree root shared by both given indices in
     /// the direct path of `leaf_index_1`.
     ///
-    /// Returns a [LibraryError] if there's an error in the tree math computation.
+    /// Returns a [LibraryError] if there's an error in the tree math
+    /// computation.
     pub(super) fn subtree_root_position(
         &self,
         leaf_index_1: LeafNodeIndex,

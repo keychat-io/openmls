@@ -38,7 +38,8 @@ impl MlsGroup {
         }
         let message = message.into();
 
-        // Check that handshake messages are compatible with the incoming wire format policy
+        // Check that handshake messages are compatible with the incoming wire format
+        // policy
         if !message.is_external()
             && message.is_handshake_message()
             && !self
@@ -67,7 +68,8 @@ impl MlsGroup {
             .parse_message(decrypted_message, &self.message_secrets_store)
             .map_err(ProcessMessageError::from)?;
 
-        // If this is a commit, we need to load the private key material we need for decryption.
+        // If this is a commit, we need to load the private key material we need for
+        // decryption.
         let (old_epoch_keypairs, leaf_node_keypairs) =
             if let ContentType::Commit = unverified_message.content_type() {
                 self.read_decryption_keypairs(provider, &self.own_leaf_nodes)?
@@ -238,13 +240,13 @@ impl MlsGroup {
     ///  - ValSem111
     ///  - ValSem112
     ///  - ValSem113: All Proposals: The proposal type must be supported by all
-    ///               members of the group
+    ///    members of the group
     ///  - ValSem200
     ///  - ValSem201
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241
@@ -345,7 +347,8 @@ impl MlsGroup {
         }
     }
 
-    /// Performs framing validation and, if necessary, decrypts the given message.
+    /// Performs framing validation and, if necessary, decrypts the given
+    /// message.
     ///
     /// Returns the [`DecryptedMessage`] if processing is successful, or a
     /// [`ValidationError`] if it is not.
@@ -374,7 +377,8 @@ impl MlsGroup {
         //  - ValSem007 MembershipTag presence
         match message {
             ProtocolMessage::PublicMessage(public_message) => {
-                // If the message is older than the current epoch, we need to fetch the correct secret tree first.
+                // If the message is older than the current epoch, we need to fetch the correct
+                // secret tree first.
                 let message_secrets =
                     self.message_secrets_for_epoch(epoch).map_err(|e| match e {
                         SecretTreeError::TooDistantInThePast => ValidationError::NoPastEpochData,
@@ -392,7 +396,8 @@ impl MlsGroup {
                 )
             }
             ProtocolMessage::PrivateMessage(ciphertext) => {
-                // If the message is older than the current epoch, we need to fetch the correct secret tree first
+                // If the message is older than the current epoch, we need to fetch the correct
+                // secret tree first
                 DecryptedMessage::from_inbound_ciphertext(
                     ciphertext,
                     crypto,

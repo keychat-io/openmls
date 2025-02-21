@@ -39,7 +39,8 @@ pub enum Propose {
     /// A PSK proposal gets a pre shared key id.
     PreSharedKey(PreSharedKeyId),
 
-    /// A re-init proposal gets the [`GroupId`], [`ProtocolVersion`], [`Ciphersuite`], and [`Extensions`].
+    /// A re-init proposal gets the [`GroupId`], [`ProtocolVersion`],
+    /// [`Ciphersuite`], and [`Extensions`].
     ReInit {
         group_id: GroupId,
         version: ProtocolVersion,
@@ -347,10 +348,11 @@ impl MlsGroup {
         }
     }
 
-    /// Creates a proposals with a new set of `extensions` for the group context.
+    /// Creates a proposals with a new set of `extensions` for the group
+    /// context.
     ///
-    /// Returns an error when the group does not support all the required capabilities
-    /// in the new `extensions`.
+    /// Returns an error when the group does not support all the required
+    /// capabilities in the new `extensions`.
     pub fn propose_group_context_extensions<Provider: OpenMlsProvider>(
         &mut self,
         provider: &Provider,
@@ -386,10 +388,12 @@ impl MlsGroup {
 
     /// Updates Group Context Extensions
     ///
-    /// Commits to the Group Context Extension inline proposal using the [`Extensions`]
+    /// Commits to the Group Context Extension inline proposal using the
+    /// [`Extensions`]
     ///
-    /// Returns an error when the group does not support all the required capabilities
-    /// in the new `extensions` or if there is a pending commit.
+    /// Returns an error when the group does not support all the required
+    /// capabilities in the new `extensions` or if there is a pending
+    /// commit.
     //// FIXME: #1217
     #[allow(clippy::type_complexity)]
     pub fn update_group_context_extensions<Provider: OpenMlsProvider>(

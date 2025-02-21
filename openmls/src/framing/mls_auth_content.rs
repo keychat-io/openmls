@@ -42,7 +42,7 @@ use crate::{
 ///        case proposal:
 ///            struct{};
 ///    };
-///} FramedContentAuthData;
+/// } FramedContentAuthData;
 /// ```
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct FramedContentAuthData {
@@ -117,8 +117,8 @@ impl AuthenticatedContent {
             .map_err(|_| LibraryError::custom("Signing failed"))
     }
 
-    /// This constructor builds an `AuthenticatedContent` containing an application
-    /// message. The sender type is always `SenderType::Member`.
+    /// This constructor builds an `AuthenticatedContent` containing an
+    /// application message. The sender type is always `SenderType::Member`.
     pub(crate) fn new_application(
         sender_leaf_index: LeafNodeIndex,
         authenticated_data: &[u8],
@@ -155,7 +155,8 @@ impl AuthenticatedContent {
         )
     }
 
-    /// This constructor builds an `PublicMessage` containing an External Proposal.
+    /// This constructor builds an `PublicMessage` containing an External
+    /// Proposal.
     pub(crate) fn new_join_proposal(
         proposal: Proposal,
         group_id: GroupId,
@@ -178,7 +179,8 @@ impl AuthenticatedContent {
             .map_err(|_| LibraryError::custom("Signing failed"))
     }
 
-    /// This constructor builds an `PublicMessage` containing an External Proposal.
+    /// This constructor builds an `PublicMessage` containing an External
+    /// Proposal.
     pub(crate) fn new_external_proposal(
         proposal: Proposal,
         group_id: GroupId,
@@ -204,9 +206,9 @@ impl AuthenticatedContent {
 
     /// This constructor builds an `PublicMessage` containing a Commit. If the
     /// given `CommitType` is `Member`, the `SenderType` is `Member` as well. If
-    /// it's an `External` commit, the `SenderType` is `NewMemberCommit`. If it is an
-    /// `External` commit, the context is not signed along with the rest of the
-    /// commit.
+    /// it's an `External` commit, the `SenderType` is `NewMemberCommit`. If it
+    /// is an `External` commit, the context is not signed along with the
+    /// rest of the commit.
     pub(crate) fn commit(
         framing_parameters: FramingParameters,
         sender: Sender,

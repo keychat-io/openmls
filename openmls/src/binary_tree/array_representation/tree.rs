@@ -4,8 +4,8 @@
 //!
 //! This module contains an implementation of a binary tree based on an array
 //! representation. The main [`ABinaryTree`] struct is generally immutable, but
-//! allows the creation of an [`AbDiff`] struct, where changes can be made before
-//! merging it back into an existing tree.
+//! allows the creation of an [`AbDiff`] struct, where changes can be made
+//! before merging it back into an existing tree.
 
 use std::fmt::Debug;
 
@@ -195,17 +195,18 @@ impl<L: Clone + Debug + Default, P: Clone + Debug + Default> ABinaryTree<L, P> {
         }
     }
 
-    /// Return a reference to the leaf at the given `LeafNodeIndex`, or the default
-    /// value if the leaf is not found.
+    /// Return a reference to the leaf at the given `LeafNodeIndex`, or the
+    /// default value if the leaf is not found.
     pub(crate) fn leaf(&self, leaf_index: LeafNodeIndex) -> &L {
         self.leaf_nodes
             .get(leaf_index.usize())
             .unwrap_or(&self.default_leaf)
     }
 
-    /// Returns a vector of [`ParentNodeIndex`]es, where the first reference is to
-    /// the root of the shared subtree of the two given leaf indices followed by
-    /// references to the nodes in the direct path of said subtree root.
+    /// Returns a vector of [`ParentNodeIndex`]es, where the first reference is
+    /// to the root of the shared subtree of the two given leaf indices
+    /// followed by references to the nodes in the direct path of said
+    /// subtree root.
     pub(crate) fn subtree_path(
         &self,
         leaf_index_1: LeafNodeIndex,

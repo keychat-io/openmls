@@ -253,7 +253,8 @@ fn test_valsem003() {
         unreachable!();
     }
 
-    // Processing a commit twice should fail i.e. an epoch can only be used once in a commit message
+    // Processing a commit twice should fail i.e. an epoch can only be used once in
+    // a commit message
     let process_twice = bob_group.process_message(provider, original_message);
     assert!(matches!(
         process_twice.unwrap_err(),
@@ -296,7 +297,8 @@ fn test_valsem004() {
     let random_sender = Sender::build_member(LeafNodeIndex::new(987));
     plaintext.set_sender(random_sender);
 
-    // The membership tag is checked before the sender, so we need to re-calculate it and set it
+    // The membership tag is checked before the sender, so we need to re-calculate
+    // it and set it
     plaintext
         .set_membership_tag(
             provider.crypto(),
@@ -357,7 +359,8 @@ fn test_valsem005() {
 
     plaintext.set_content(FramedContentBody::Application(vec![1, 2, 3].into()));
 
-    // The membership tag is checked before verifying content encryption, so we need to re-calculate it and set it
+    // The membership tag is checked before verifying content encryption, so we need
+    // to re-calculate it and set it
     plaintext
         .set_membership_tag(
             provider.crypto(),
@@ -577,7 +580,8 @@ fn test_valsem009() {
 
     plaintext.set_confirmation_tag(None);
 
-    // The membership tag covers the confirmation tag, so we need to re-calculate it and set it
+    // The membership tag covers the confirmation tag, so we need to re-calculate it
+    // and set it
     plaintext
         .set_membership_tag(
             provider.crypto(),
@@ -640,7 +644,8 @@ fn test_valsem010() {
     // Invalidate signature
     plaintext.invalidate_signature();
 
-    // The membership tag covers the signature, so we need to re-calculate it and set it
+    // The membership tag covers the signature, so we need to re-calculate it and
+    // set it
     plaintext
         .set_membership_tag(
             provider.crypto(),

@@ -648,7 +648,8 @@ impl LeafNodeTbs {
     }
 }
 
-/// Helper struct that holds additional information required to sign a leaf node.
+/// Helper struct that holds additional information required to sign a leaf
+/// node.
 ///
 /// ```c
 /// // draft-ietf-mls-protocol-17

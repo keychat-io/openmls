@@ -25,8 +25,8 @@ impl PublicGroup {
     /// This function is used to parse messages from the DS.
     /// It checks for syntactic errors and makes some semantic checks as well.
     /// If the input is a [PrivateMessage] message, it will be decrypted.
-    /// Returns an [UnverifiedMessage] that can be inspected and later processed in
-    /// [Self::process_unverified_message()].
+    /// Returns an [UnverifiedMessage] that can be inspected and later processed
+    /// in [Self::process_unverified_message()].
     /// Checks the following semantic validation:
     ///  - ValSem002
     ///  - ValSem003
@@ -53,8 +53,9 @@ impl PublicGroup {
 
         let message_epoch = verifiable_content.epoch();
 
-        // Depending on the epoch of the message, use the correct set of leaf nodes for getting the
-        // credential and signature key for the member with given index.
+        // Depending on the epoch of the message, use the correct set of leaf nodes for
+        // getting the credential and signature key for the member with given
+        // index.
         let look_up_credential_with_key = |leaf_node_index| {
             if message_epoch == self.group_context().epoch() {
                 self.treesync()
@@ -74,8 +75,8 @@ impl PublicGroup {
         // Checks the following semantic validation:
         //  - ValSem112
         //  - ValSem245
-        //  - Prepares ValSem246 by setting the right credential. The remainder
-        //    of ValSem246 is validated as part of ValSem010.
+        //  - Prepares ValSem246 by setting the right credential. The remainder of
+        //    ValSem246 is validated as part of ValSem010.
         // External senders are not supported yet #106/#151.
         let CredentialWithKey {
             credential,
@@ -137,7 +138,7 @@ impl PublicGroup {
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241
@@ -200,7 +201,7 @@ impl PublicGroup {
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241

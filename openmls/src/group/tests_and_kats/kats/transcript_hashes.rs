@@ -87,7 +87,9 @@ pub fn run_test_vector(test_vector: TranscriptTestVector) {
         FramedContentBody::Commit(_)
     ));
 
-    // ... and `authenticated_content.auth.confirmation_tag` is a valid MAC for `authenticated_content` with key `confirmation_key` and input `confirmed_transcript_hash_after`.
+    // ... and `authenticated_content.auth.confirmation_tag` is a valid MAC for
+    // `authenticated_content` with key `confirmation_key` and input
+    // `confirmed_transcript_hash_after`.
     let confirmation_key =
         ConfirmationKey::from_secret(Secret::from_slice(&test_vector.confirmation_key));
     let got_confirmation_tag = confirmation_key
@@ -102,7 +104,9 @@ pub fn run_test_vector(test_vector: TranscriptTestVector) {
         *authenticated_content.confirmation_tag().unwrap()
     );
 
-    // Verify that *`confirmed_transcript_hash_after`* and `interim_transcript_hash_after` are the result of updating `interim_transcript_hash_before` with `authenticated_content`.
+    // Verify that *`confirmed_transcript_hash_after`* and
+    // `interim_transcript_hash_after` are the result of updating
+    // `interim_transcript_hash_before` with `authenticated_content`.
     let got_confirmed_transcript_hash_after = {
         let input = ConfirmedTranscriptHashInput::try_from(&authenticated_content).unwrap();
 
@@ -119,7 +123,9 @@ pub fn run_test_vector(test_vector: TranscriptTestVector) {
         got_confirmed_transcript_hash_after
     );
 
-    // Verify that `confirmed_transcript_hash_after` and *`interim_transcript_hash_after`* are the result of updating `interim_transcript_hash_before` with `authenticated_content`.
+    // Verify that `confirmed_transcript_hash_after` and
+    // *`interim_transcript_hash_after`* are the result of updating
+    // `interim_transcript_hash_before` with `authenticated_content`.
     let got_interim_transcript_hash_after = {
         let input = InterimTranscriptHashInput::from(&got_confirmation_tag);
 
@@ -164,8 +170,8 @@ pub fn generate_test_vector(ciphersuite: Ciphersuite) -> TranscriptTestVector {
 
     let interim_transcript_hash_before = randombytes(ciphersuite.hash_length());
 
-    // Note: This does not have a valid `confirmation_tag` for now and is only used to
-    // calculate `confirmed_transcript_hash_after`.
+    // Note: This does not have a valid `confirmation_tag` for now and is only used
+    // to calculate `confirmed_transcript_hash_after`.
     let mut authenticated_content = {
         let aad = provider.rand().random_vec(48).unwrap();
         let framing_parameters = FramingParameters::new(&aad, WireFormat::PublicMessage);

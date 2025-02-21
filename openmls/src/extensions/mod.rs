@@ -102,7 +102,8 @@ pub enum ExtensionType {
 }
 
 impl ExtensionType {
-    /// Returns true for all extension types that are considered "default" by the spec.
+    /// Returns true for all extension types that are considered "default" by
+    /// the spec.
     pub(crate) fn is_default(self) -> bool {
         match self {
             ExtensionType::ApplicationId
@@ -421,7 +422,8 @@ impl Extensions {
             })
     }
 
-    /// Get a reference to the [`UnknownExtension`] with the given type id, if there is any.
+    /// Get a reference to the [`UnknownExtension`] with the given type id, if
+    /// there is any.
     pub fn unknown(&self, extension_type_id: u16) -> Option<&UnknownExtension> {
         let extension_type: ExtensionType = extension_type_id.into();
 

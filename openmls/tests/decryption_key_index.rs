@@ -20,7 +20,8 @@ fn decryption_key_index_computation() {
         CodecUse::StructMessages,
     );
 
-    // Create a basic group with more than 4 members to create a tree with intermediate nodes.
+    // Create a basic group with more than 4 members to create a tree with
+    // intermediate nodes.
     let group_id = setup
         .create_random_group(10, ciphersuite, noop_authentication_service)
         .expect("An unexpected error occurred.");

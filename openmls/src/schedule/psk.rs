@@ -47,11 +47,13 @@ pub enum ResumptionPskUsage {
     Application = 1,
     /// Resumption PSK used for group reinitialization.
     ///
-    /// Note: "Resumption PSKs with usage `reinit` MUST NOT be used in other contexts (than reinitialization)."
+    /// Note: "Resumption PSKs with usage `reinit` MUST NOT be used in other
+    /// contexts (than reinitialization)."
     Reinit = 2,
     /// Resumption PSK used for subgroup branching.
     ///
-    /// Note: "Resumption PSKs with usage `branch` MUST NOT be used in other contexts (than subgroup branching)."
+    /// Note: "Resumption PSKs with usage `branch` MUST NOT be used in other
+    /// contexts (than subgroup branching)."
     Branch = 3,
 }
 
@@ -274,11 +276,13 @@ impl PreSharedKeyId {
         self.psk_nonce.as_slice()
     }
 
-    // ----- Key Store -----------------------------------------------------------------------------
+    // ----- Key Store
+    // -----------------------------------------------------------------------------
 
     /// Save this `PreSharedKeyId` in the keystore.
     ///
-    /// Note: The nonce is not saved as it must be unique for each time it's being applied.
+    /// Note: The nonce is not saved as it must be unique for each time it's
+    /// being applied.
     pub fn store<Provider: OpenMlsProvider>(
         &self,
         provider: &Provider,
@@ -296,7 +300,8 @@ impl PreSharedKeyId {
             .map_err(|_| PskError::Storage)
     }
 
-    // ----- Validation ----------------------------------------------------------------------------
+    // ----- Validation
+    // ----------------------------------------------------------------------------
 
     pub(crate) fn validate_in_proposal(self, ciphersuite: Ciphersuite) -> Result<Self, PskError> {
         // ValSem402
@@ -404,7 +409,8 @@ impl PskSecret {
                     .map_err(LibraryError::unexpected_crypto_error)?
             };
 
-            // psk_input_[i] = ExpandWithLabel( psk_extracted_[i], "derived psk", PSKLabel, KDF.Nh)
+            // psk_input_[i] = ExpandWithLabel( psk_extracted_[i], "derived psk", PSKLabel,
+            // KDF.Nh)
             let psk_input = {
                 let psk_label = PskLabel::new(psk_id.borrow(), index as u16, num_psks)
                     .tls_serialize_detached()
@@ -482,7 +488,8 @@ pub(crate) fn load_psks<'p, Storage: StorageProvider>(
     Ok(psk_bundles)
 }
 
-/// This module contains a store that can hold a rollover list of resumption PSKs.
+/// This module contains a store that can hold a rollover list of resumption
+/// PSKs.
 pub mod store {
     use serde::{Deserialize, Serialize};
 
@@ -500,7 +507,8 @@ pub mod store {
     }
 
     impl ResumptionPskStore {
-        /// Creates a new store with a given maximum size of `number_of_secrets`.
+        /// Creates a new store with a given maximum size of
+        /// `number_of_secrets`.
         pub(crate) fn new(max_number_of_secrets: usize) -> Self {
             Self {
                 max_number_of_secrets,

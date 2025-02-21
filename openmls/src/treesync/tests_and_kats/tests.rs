@@ -144,8 +144,10 @@ fn that_commit_secret_is_derived_from_end_of_update_path_not_root() {
     // _   _   C   D
     // ```
 
-    // C(harlie)'s direct path is [Z, Y], but its filtered direct path is just [Z] because the copath subtree of Y is all blank.
-    // So C(harlie) will not generate a path_secret for Y, which means that the commit secret is not really defined.
+    // C(harlie)'s direct path is [Z, Y], but its filtered direct path is just [Z]
+    // because the copath subtree of Y is all blank. So C(harlie) will not
+    // generate a path_secret for Y, which means that the commit secret is not
+    // really defined.
 
     charlie_group
         .create_message(

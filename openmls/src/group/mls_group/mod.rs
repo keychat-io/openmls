@@ -1,7 +1,6 @@
 //! MLS Group
 //!
 //! This module contains [`MlsGroup`] and its submodules.
-//!
 
 use create_commit::CreateCommitParams;
 use past_secrets::MessageSecretsStore;
@@ -147,14 +146,14 @@ impl From<PendingCommitState> for StagedCommit {
 /// states and their transitions are as follows:
 ///
 /// * [`MlsGroupState::Operational`]: This is the main state of the group, which
-///   allows access to all of its functionality, (except merging pending commits,
-///   see the [`MlsGroupState::PendingCommit`] for more information) and it's the
-///   state the group starts in (except when created via
-///   [`MlsGroup::join_by_external_commit()`], see the functions documentation for
-///   more information). From this `Operational`, the group state can either
+///   allows access to all of its functionality, (except merging pending
+///   commits, see the [`MlsGroupState::PendingCommit`] for more information)
+///   and it's the state the group starts in (except when created via
+///   [`MlsGroup::join_by_external_commit()`], see the functions documentation
+///   for more information). From this `Operational`, the group state can either
 ///   transition to [`MlsGroupState::Inactive`], when it processes a commit that
-///   removes this client from the group, or to [`MlsGroupState::PendingCommit`],
-///   when this client creates a commit.
+///   removes this client from the group, or to
+///   [`MlsGroupState::PendingCommit`], when this client creates a commit.
 ///
 /// * [`MlsGroupState::Inactive`]: A group can enter this state from any other
 ///   state when it processes a commit that removes this client from the group.
@@ -163,36 +162,38 @@ impl From<PendingCommitState> for StagedCommit {
 ///   can join via external commit.
 ///
 /// * [`MlsGroupState::PendingCommit`]: This state is split into two possible
-///   sub-states, one for each Commit type:
-///   [`PendingCommitState::Member`] and [`PendingCommitState::External`]:
+///   sub-states, one for each Commit type: [`PendingCommitState::Member`] and
+///   [`PendingCommitState::External`]:
 ///
 ///   * If the client creates a commit for this group, the `PendingCommit` state
-///     is entered with [`PendingCommitState::Member`] and with the [`StagedCommit`] as
-///     additional state variable. In this state, it can perform the same
-///     operations as in the [`MlsGroupState::Operational`], except that it cannot
-///     create proposals or commits. However, it can merge or clear the stored
-///     [`StagedCommit`], where both actions result in a transition to the
-///     [`MlsGroupState::Operational`]. Additionally, if a commit from another
-///     group member is processed, the own pending commit is also cleared and
-///     either the `Inactive` state is entered (if this client was removed from
-///     the group as part of the processed commit), or the `Operational` state is
-///     entered.
+///     is entered with [`PendingCommitState::Member`] and with the
+///     [`StagedCommit`] as additional state variable. In this state, it can
+///     perform the same operations as in the [`MlsGroupState::Operational`],
+///     except that it cannot create proposals or commits. However, it can merge
+///     or clear the stored [`StagedCommit`], where both actions result in a
+///     transition to the [`MlsGroupState::Operational`]. Additionally, if a
+///     commit from another group member is processed, the own pending commit is
+///     also cleared and either the `Inactive` state is entered (if this client
+///     was removed from the group as part of the processed commit), or the
+///     `Operational` state is entered.
 ///
 ///   * A group can enter the [`PendingCommitState::External`] sub-state only as
 ///     the initial state when the group is created via
 ///     [`MlsGroup::join_by_external_commit()`]. In contrast to the
 ///     [`PendingCommitState::Member`] `PendingCommit` state, the only possible
-///     functionality that can be used is the [`MlsGroup::merge_pending_commit()`]
-///     function, which merges the pending external commit and transitions the
-///     state to [`MlsGroupState::PendingCommit`]. For more information on the
-///     external commit process, see [`MlsGroup::join_by_external_commit()`] or
-///     Section 11.2.1 of the MLS specification.
+///     functionality that can be used is the
+///     [`MlsGroup::merge_pending_commit()`] function, which merges the pending
+///     external commit and transitions the state to
+///     [`MlsGroupState::PendingCommit`]. For more information on the external
+///     commit process, see [`MlsGroup::join_by_external_commit()`] or Section
+///     11.2.1 of the MLS specification.
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "test-utils"), derive(Clone, PartialEq))]
 pub enum MlsGroupState {
     /// There is currently a pending Commit that hasn't been merged yet.
     PendingCommit(Box<PendingCommitState>),
-    /// The group state is in an opertaional state, where new messages and Commits can be created.
+    /// The group state is in an opertaional state, where new messages and
+    /// Commits can be created.
     Operational,
     /// The group is inactive because the member has been removed.
     Inactive,
@@ -225,7 +226,8 @@ pub enum MlsGroupState {
 #[derive(Debug)]
 #[cfg_attr(feature = "test-utils", derive(Clone, PartialEq))]
 pub struct MlsGroup {
-    /// The group configuration. See [`MlsGroupJoinConfig`] for more information.
+    /// The group configuration. See [`MlsGroupJoinConfig`] for more
+    /// information.
     mls_group_config: MlsGroupJoinConfig,
     /// The public state of the group.
     public_group: PublicGroup,
@@ -234,8 +236,8 @@ pub struct MlsGroup {
     /// The own leaf index in the ratchet tree.
     own_leaf_index: LeafNodeIndex,
     /// A [`MessageSecretsStore`] that stores message secrets.
-    /// By default this store has the length of 1, i.e. only the [`MessageSecrets`]
-    /// of the current epoch is kept.
+    /// By default this store has the length of 1, i.e. only the
+    /// [`MessageSecrets`] of the current epoch is kept.
     /// If more secrets from past epochs should be kept in order to be
     /// able to decrypt application messages from previous epochs, the size of
     /// the store must be increased through [`max_past_epochs()`].
@@ -352,9 +354,10 @@ impl MlsGroup {
     /// Sets the `group_state` to [`MlsGroupState::Operational`], thus clearing
     /// any potentially pending commits.
     ///
-    /// Note that this has no effect if the group was created through an external commit and
-    /// the resulting external commit has not been merged yet. For more
-    /// information, see [`MlsGroup::join_by_external_commit()`].
+    /// Note that this has no effect if the group was created through an
+    /// external commit and the resulting external commit has not been
+    /// merged yet. For more information, see
+    /// [`MlsGroup::join_by_external_commit()`].
     ///
     /// Use with caution! This function should only be used if it is clear that
     /// the pending commit will not be used in the group. In particular, if a
@@ -379,9 +382,9 @@ impl MlsGroup {
 
     /// Clear the pending proposals, if the proposal store is not empty.
     ///
-    /// Warning: Once the pending proposals are cleared it will be impossible to process
-    /// a Commit message that references those proposals. Only use this
-    /// function as a last resort, e.g. when a call to
+    /// Warning: Once the pending proposals are cleared it will be impossible to
+    /// process a Commit message that references those proposals. Only use
+    /// this function as a last resort, e.g. when a call to
     /// `MlsGroup::commit_to_pending_proposals` fails.
     pub fn clear_pending_proposals<Storage: StorageProvider>(
         &mut self,
@@ -399,7 +402,8 @@ impl MlsGroup {
         Ok(())
     }
 
-    /// Get a reference to the group context [`Extensions`] of this [`MlsGroup`].
+    /// Get a reference to the group context [`Extensions`] of this
+    /// [`MlsGroup`].
     pub fn extensions(&self) -> &Extensions {
         self.public_group().group_context().extensions()
     }
@@ -504,7 +508,8 @@ impl MlsGroup {
         self.message_secrets_store.resize(max_past_epochs);
     }
 
-    /// Get the message secrets. Either from the secrets store or from the group.
+    /// Get the message secrets. Either from the secrets store or from the
+    /// group.
     pub(crate) fn message_secrets_mut(
         &mut self,
         epoch: GroupEpoch,
@@ -518,7 +523,8 @@ impl MlsGroup {
         }
     }
 
-    /// Get the message secrets. Either from the secrets store or from the group.
+    /// Get the message secrets. Either from the secrets store or from the
+    /// group.
     pub(crate) fn message_secrets_for_epoch(
         &self,
         epoch: GroupEpoch,
@@ -746,7 +752,8 @@ impl MlsGroup {
             OutgoingWireFormatPolicy::AlwaysCiphertext => {
                 let ciphertext = self
                     .encrypt(mls_auth_content, provider)
-                    // We can be sure the encryption will work because the plaintext was created by us
+                    // We can be sure the encryption will work because the plaintext was created by
+                    // us
                     .map_err(|_| LibraryError::custom("Malformed plaintext"))?;
                 MlsMessageOut::from_private_message(ciphertext, self.version())
             }
@@ -780,11 +787,6 @@ impl MlsGroup {
     #[cfg(any(feature = "test-utils", test))]
     pub(crate) fn message_secrets_test_mut(&mut self) -> &mut MessageSecrets {
         self.message_secrets_store.message_secrets_mut()
-    }
-
-    #[cfg(any(feature = "test-utils", test))]
-    pub fn print_ratchet_tree(&self, message: &str) {
-        println!("{}: {}", message, self.public_group().export_ratchet_tree());
     }
 
     #[cfg(any(feature = "test-utils", test))]
@@ -829,14 +831,15 @@ pub struct StagedWelcome {
     own_leaf_index: LeafNodeIndex,
 
     /// A [`MessageSecretsStore`] that stores message secrets.
-    /// By default this store has the length of 1, i.e. only the [`MessageSecrets`]
-    /// of the current epoch is kept.
+    /// By default this store has the length of 1, i.e. only the
+    /// [`MessageSecrets`] of the current epoch is kept.
     /// If more secrets from past epochs should be kept in order to be
     /// able to decrypt application messages from previous epochs, the size of
     /// the store must be increased through [`max_past_epochs()`].
     message_secrets_store: MessageSecretsStore,
 
-    /// Resumption psk store. This is where the resumption psks are kept in a rollover list.
+    /// Resumption psk store. This is where the resumption psks are kept in a
+    /// rollover list.
     resumption_psk_store: ResumptionPskStore,
 
     /// The [`VerifiableGroupInfo`] from the [`Welcome`] message.
