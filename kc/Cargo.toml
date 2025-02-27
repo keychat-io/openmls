@@ -5,10 +5,11 @@ authors = ["OpenMLS Authors"]
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.57"
 base64 = "0.13"
 log = "0.4"
 pretty_env_logger = "0.4"
-
+rusqlite = { version = "0.31", features = ["bundled"] }
 openmls = { path = "../openmls", features = ["test-utils"] }
 openmls_traits = { path = "../traits" }
 openmls_rust_crypto = { path = "../openmls_rust_crypto" }
@@ -20,6 +21,7 @@ serde_json = "1.0"
 rand_chacha = { version = "0.3.1" }
 hex = "0.4.3"
 tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
+sqlx = {version = "0.8.0", features = ["runtime-tokio", "sqlite"]}
 
 [dependencies.termion]
 version = "1.5"

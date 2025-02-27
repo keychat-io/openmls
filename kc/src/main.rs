@@ -126,7 +126,7 @@ async fn basic_test_create_group() {
     let processed_message = bob_mls_group
         .process_message(
             &provider,
-            message_out
+            message_out.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -134,7 +134,7 @@ async fn basic_test_create_group() {
         .expect("Could not process message.");
 
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        processed_message.into_content()
+        processed_message.0.into_content()
     {
         println!(
             "application_message.into_bytes() is {:?}",
@@ -164,7 +164,7 @@ async fn basic_test_create_group() {
 
     // Check that we received the correct message
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         // Merge staged Commit
         alice_mls_group
@@ -199,7 +199,7 @@ async fn basic_test_create_group() {
 
     // Check that we received the correct proposals
     if let ProcessedMessageContent::ProposalMessage(staged_proposal) =
-        bob_processed_message.into_content()
+        bob_processed_message.0.into_content()
     {
         let provider_ref = &provider;
         if let Proposal::Update(ref _update_proposal) = staged_proposal.proposal() {
@@ -234,7 +234,7 @@ async fn basic_test_create_group() {
 
     // Check that we received the correct message
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        bob_processed_message.into_content()
+        bob_processed_message.0.into_content()
     {
         // Merge staged Commit
         bob_mls_group
@@ -270,7 +270,7 @@ async fn basic_test_create_group() {
         .expect("");
 
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         alice_mls_group
             .merge_staged_commit(&provider, *staged_commit)
@@ -308,7 +308,7 @@ async fn basic_test_create_group() {
     let bob_processed_message = bob_mls_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -316,7 +316,7 @@ async fn basic_test_create_group() {
         .expect("Could not process message.");
 
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        bob_processed_message.into_content()
+        bob_processed_message.0.into_content()
     {
         println!(
             "bob process charlie msg is {:?}",
@@ -327,14 +327,14 @@ async fn basic_test_create_group() {
     let alice_processed_message = alice_mls_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
         )
         .expect("Could not process message.");
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         println!(
             "alice process charlie msg is {:?}",
@@ -351,7 +351,7 @@ async fn basic_test_create_group() {
     let alice_processed_message = alice_mls_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -359,7 +359,7 @@ async fn basic_test_create_group() {
         .expect("Could not process message.");
 
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         println!(
             "alice process bob msg is {:?}",
@@ -370,7 +370,7 @@ async fn basic_test_create_group() {
     let charlie_processed_message = charlie_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -378,7 +378,7 @@ async fn basic_test_create_group() {
         .expect("Could not process message.");
 
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        charlie_processed_message.into_content()
+        charlie_processed_message.0.into_content()
     {
         println!(
             "charlie process bob msg is {:?}",
@@ -419,7 +419,7 @@ async fn basic_test_create_group() {
 
     // Merge Commit
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         alice_mls_group
             .merge_staged_commit(&provider, *staged_commit)
@@ -430,7 +430,7 @@ async fn basic_test_create_group() {
 
     // Merge Commit
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        charlie_processed_message.into_content()
+        charlie_processed_message.0.into_content()
     {
         charlie_group
             .merge_staged_commit(&provider, *staged_commit)
@@ -462,7 +462,7 @@ async fn basic_test_create_group() {
         .expect("");
 
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         alice_mls_group
             .merge_staged_commit(&provider, *staged_commit)
@@ -483,7 +483,7 @@ async fn basic_test_create_group() {
 
     // Merge Commit
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        bob_processed_message.into_content()
+        bob_processed_message.0.into_content()
     {
         bob_mls_group
             .merge_staged_commit(&provider, *staged_commit)
@@ -519,7 +519,7 @@ async fn basic_test_create_group() {
     let bob_processed_message = bob_mls_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -527,7 +527,7 @@ async fn basic_test_create_group() {
         .expect("Could not process message.");
 
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        bob_processed_message.into_content()
+        bob_processed_message.0.into_content()
     {
         println!(
             "bob process tom msg is {:?}",
@@ -538,14 +538,14 @@ async fn basic_test_create_group() {
     let alice_processed_message = alice_mls_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
         )
         .expect("Could not process message.");
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         println!(
             "alice process tom msg is {:?}",
@@ -556,14 +556,14 @@ async fn basic_test_create_group() {
     let charlie_processed_message = charlie_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
         )
         .expect("Could not process message.");
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        charlie_processed_message.into_content()
+        charlie_processed_message.0.into_content()
     {
         println!(
             "charlie process tom msg is {:?}",
@@ -628,7 +628,7 @@ async fn basic_test_create_group() {
 
     // Check that we receive the correct proposal for Alice
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         let _remove = staged_commit
             .remove_proposals()
@@ -645,7 +645,7 @@ async fn basic_test_create_group() {
 
     // Check that we receive the correct proposal for Bob
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        bob_processed_message.into_content()
+        bob_processed_message.0.into_content()
     {
         let _remove = staged_commit
             .remove_proposals()
@@ -662,7 +662,7 @@ async fn basic_test_create_group() {
 
     // Check that we receive the correct proposal for Tom
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        tom_processed_message.into_content()
+        tom_processed_message.0.into_content()
     {
         let _remove = staged_commit
             .remove_proposals()
@@ -752,14 +752,14 @@ async fn basic_test_create_group() {
     let tom_processed_message = tom_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
         )
         .expect("Could not process message.");
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        tom_processed_message.into_content()
+        tom_processed_message.0.into_content()
     {
         println!(
             "tom process alice msg is {:?}",
@@ -770,14 +770,14 @@ async fn basic_test_create_group() {
     let charlie_processed_message = charlie_group
         .process_message(
             &provider,
-            queued_message
+            queued_message.0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
         )
         .expect("Could not process message.");
     if let ProcessedMessageContent::ApplicationMessage(application_message) =
-        charlie_processed_message.into_content()
+        charlie_processed_message.0.into_content()
     {
         println!(
             "charlie process alice msg is {:?}",
@@ -834,7 +834,7 @@ async fn basic_test_create_group() {
 
     // Store proposal
     if let ProcessedMessageContent::ProposalMessage(staged_proposal) =
-        alice_processed_message.into_content()
+        alice_processed_message.0.into_content()
     {
         // Store proposal
         alice_mls_group
@@ -846,7 +846,7 @@ async fn basic_test_create_group() {
 
     // Store proposal
     if let ProcessedMessageContent::ProposalMessage(staged_proposal) =
-        charlie_processed_message.into_content()
+        charlie_processed_message.0.into_content()
     {
         // Store proposal
         charlie_group
@@ -888,7 +888,7 @@ async fn basic_test_create_group() {
 
     // Check that we received the correct proposals
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        charlie_processed_message.into_content()
+        charlie_processed_message.0.into_content()
     {
         let _remove = staged_commit
             .remove_proposals()
@@ -911,7 +911,7 @@ async fn basic_test_create_group() {
 
     // Check that we received the correct proposals
     if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
-        tom_processed_message.into_content()
+        tom_processed_message.0.into_content()
     {
         let _remove = staged_commit
             .remove_proposals()
