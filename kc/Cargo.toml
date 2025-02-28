@@ -9,7 +9,6 @@ anyhow = "1.0.57"
 base64 = "0.13"
 log = "0.4"
 pretty_env_logger = "0.4"
-rusqlite = { version = "0.31", features = ["bundled"] }
 openmls = { path = "../openmls", features = ["test-utils"] }
 openmls_traits = { path = "../traits" }
 openmls_rust_crypto = { path = "../openmls_rust_crypto" }

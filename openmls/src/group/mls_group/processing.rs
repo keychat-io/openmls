@@ -29,7 +29,7 @@ impl MlsGroup {
         &mut self,
         provider: &Provider,
         message: impl Into<ProtocolMessage>,
-    ) -> Result<ProcessedMessage, ProcessMessageError> {
+    ) -> Result<(ProcessedMessage, Option<Vec<u8>>), ProcessMessageError> {
         // Make sure we are still a member of the group
         if !self.is_active() {
             return Err(ProcessMessageError::GroupStateError(
@@ -63,6 +63,18 @@ impl MlsGroup {
         let decrypted_message =
             self.decrypt_message(provider.crypto(), message, &sender_ratchet_configuration)?;
 
+        let sender_ratchet = self
+            .message_secrets()
+            .secret_tree()
+            .application_sender_ratchets
+            .as_slice()
+            .iter()
+            .filter_map(|s| s.as_ref())
+            .next();
+        let ratchet_key = sender_ratchet
+            .and_then(|sr| sr.get_decryption_ratchet_secret())
+            .map(|rs| rs.ratchet_head.secret.as_slice().to_vec());
+
         let unverified_message = self
             .public_group
             .parse_message(decrypted_message, &self.message_secrets_store)
@@ -77,12 +89,15 @@ impl MlsGroup {
                 (vec![], vec![])
             };
 
-        self.process_unverified_message(
-            provider,
-            unverified_message,
-            old_epoch_keypairs,
-            leaf_node_keypairs,
-        )
+        Ok((
+            self.process_unverified_message(
+                provider,
+                unverified_message,
+                old_epoch_keypairs,
+                leaf_node_keypairs,
+            )?,
+            ratchet_key,
+        ))
     }
 
     /// Stores a standalone proposal in the internal [ProposalStore]

@@ -7,7 +7,6 @@ use openmls_rust_crypto::RustCrypto;
 use openmls_sqlite_storage::{Codec, Connection, SqliteStorageProvider};
 use openmls_traits::OpenMlsProvider;
 
-
 #[derive(Default)]
 pub struct JsonCodec;
 
@@ -50,8 +49,7 @@ impl Default for OpenMlsRustPersistentCrypto {
     }
 }
 
-impl OpenMlsProvider for OpenMlsRustPersistentCrypto
-{
+impl OpenMlsProvider for OpenMlsRustPersistentCrypto {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
     type StorageProvider = SqliteStorageProvider<JsonCodec, Connection>;

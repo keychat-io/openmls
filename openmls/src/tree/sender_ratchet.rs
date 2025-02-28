@@ -75,7 +75,7 @@ pub(crate) type RatchetKeyMaterial = (AeadKey, AeadNonce);
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(any(feature = "test-utils", test), derive(PartialEq, Clone))]
 #[cfg_attr(any(feature = "crypto-debug", test), derive(Debug))]
-pub(crate) enum SenderRatchet {
+pub enum SenderRatchet {
     EncryptionRatchet(RatchetSecret),
     DecryptionRatchet(DecryptionRatchet),
 }
@@ -88,6 +88,20 @@ impl SenderRatchet {
             SenderRatchet::DecryptionRatchet(dec_ratchet) => dec_ratchet.generation(),
         }
     }
+
+    pub fn get_encryption_ratchet_secret(&self) -> Option<&RatchetSecret> {
+        match self {
+            SenderRatchet::EncryptionRatchet(enc_ratchet) => Some(enc_ratchet),
+            SenderRatchet::DecryptionRatchet(_) => None,
+        }
+    }
+
+    pub fn get_decryption_ratchet_secret(&self) -> Option<&DecryptionRatchet> {
+        match self {
+            SenderRatchet::EncryptionRatchet(_) => None,
+            SenderRatchet::DecryptionRatchet(dec_ratchet) => Some(dec_ratchet),
+        }
+    }
 }
 
 /// The core of both types of [`SenderRatchet`]. It contains the current head of
@@ -97,7 +111,7 @@ impl SenderRatchet {
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[cfg_attr(any(feature = "test-utils", test), derive(PartialEq, Clone))]
 pub(crate) struct RatchetSecret {
-    secret: Secret,
+    pub secret: Secret,
     generation: Generation,
 }
 
@@ -175,12 +189,12 @@ impl RatchetSecret {
 /// [`RatchetKeyMaterial`] of epochs around until they are retrieved. This
 /// behaviour can be configured via the `out_of_order_tolerance` and
 /// `maximum_forward_distance` of the given [`SenderRatchetConfiguration`].
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(any(feature = "test-utils", test), derive(PartialEq, Clone))]
 #[cfg_attr(any(feature = "crypto-debug", test), derive(Debug))]
 pub struct DecryptionRatchet {
     past_secrets: VecDeque<Option<RatchetKeyMaterial>>,
-    ratchet_head: RatchetSecret,
+    pub ratchet_head: RatchetSecret,
 }
 
 impl DecryptionRatchet {

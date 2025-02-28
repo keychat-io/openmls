@@ -72,6 +72,10 @@ impl MessageSecrets {
     pub(crate) fn secret_tree_mut(&mut self) -> &mut SecretTree {
         &mut self.secret_tree
     }
+
+    pub(crate) fn secret_tree(&self) -> &SecretTree {
+        &self.secret_tree
+    }
 }
 
 // Test functions

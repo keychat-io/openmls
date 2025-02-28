@@ -65,3 +65,12 @@ CREATE TABLE IF NOT EXISTS openmls_signature_keys (
     public_key BLOB PRIMARY KEY,
     signature_key BLOB NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS user (
+    id integer primary key AUTOINCREMENT,
+    user_id text,
+    identity blob,
+    group_list text,
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+);

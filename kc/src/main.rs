@@ -35,14 +35,10 @@ async fn basic_test_create_group() {
 
     let db_path = "./mls-lite.sqlite";
     let connection = Connection::open(db_path).unwrap();
-    let mut storage =
-        openmls_sqlite_storage::SqliteStorageProvider::new(connection);
+    let mut storage = openmls_sqlite_storage::SqliteStorageProvider::new(connection);
     storage.initialize().unwrap();
 
     let provider = OpenMlsRustPersistentCrypto::new(storage).await;
-    // let provider = provider;
-    // let provider = provider;
-    // let provider = provider;
 
     // NOTE: Since the DS currently doesn't distribute copies of the group's ratchet
     // tree, we need to include the ratchet_tree_extension.
@@ -126,7 +122,8 @@ async fn basic_test_create_group() {
     let processed_message = bob_mls_group
         .process_message(
             &provider,
-            message_out.0
+            message_out
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -308,7 +305,8 @@ async fn basic_test_create_group() {
     let bob_processed_message = bob_mls_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -327,7 +325,8 @@ async fn basic_test_create_group() {
     let alice_processed_message = alice_mls_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -351,7 +350,8 @@ async fn basic_test_create_group() {
     let alice_processed_message = alice_mls_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -370,7 +370,8 @@ async fn basic_test_create_group() {
     let charlie_processed_message = charlie_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -519,7 +520,8 @@ async fn basic_test_create_group() {
     let bob_processed_message = bob_mls_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -538,7 +540,8 @@ async fn basic_test_create_group() {
     let alice_processed_message = alice_mls_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -556,7 +559,8 @@ async fn basic_test_create_group() {
     let charlie_processed_message = charlie_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -752,7 +756,8 @@ async fn basic_test_create_group() {
     let tom_processed_message = tom_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),
@@ -770,7 +775,8 @@ async fn basic_test_create_group() {
     let charlie_processed_message = charlie_group
         .process_message(
             &provider,
-            queued_message.0
+            queued_message
+                .0
                 .clone()
                 .into_protocol_message()
                 .expect("Unexpected message type"),

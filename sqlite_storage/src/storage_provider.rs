@@ -3,10 +3,6 @@ use std::{
     marker::PhantomData,
 };
 
-use openmls_traits::storage::{Entity, Key, StorageProvider};
-use rusqlite::Connection;
-use serde::{Deserialize, Serialize};
-
 use crate::{
     codec::Codec,
     encryption_key_pairs::{
@@ -23,6 +19,11 @@ use crate::{
     },
     STORAGE_PROVIDER_VERSION,
 };
+use openmls_traits::storage::{Entity, Key, StorageProvider};
+use rusqlite::params;
+use rusqlite::Connection;
+use rusqlite::OptionalExtension;
+use serde::{Deserialize, Serialize};
 
 refinery::embed_migrations!("migrations");
 
@@ -708,3 +709,64 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> StorageProvider<STORAGE_PROVID
 struct Aad(Vec<u8>);
 
 impl Entity<STORAGE_PROVIDER_VERSION> for Aad {}
+
+impl<C: Codec, ConnectionRef: Borrow<Connection>> SqliteStorageProvider<C, ConnectionRef> {
+    pub async fn save(
+        &self,
+        nostr_id: String,
+        identity: Vec<u8>,
+        group_list: String,
+    ) -> Result<(), rusqlite::Error> {
+        self.connection.borrow().execute(
+            "INSERT INTO user (user_id, identity, group_list) values(?, ?, ?)",
+            params![nostr_id, identity, group_list],
+        )?;
+        Ok(())
+    }
+
+    pub async fn update(
+        &self,
+        nostr_id: String,
+        is_identity: bool,
+        identity: Vec<u8>,
+        group_list: String,
+    ) -> Result<(), rusqlite::Error> {
+        let is_user = self.load(nostr_id.clone()).await?;
+        // if none then insert first
+        if is_user.is_none() {
+            return self.save(nostr_id, identity, group_list).await;
+        }
+        if is_identity {
+            self.connection.borrow().execute(
+                "UPDATE user set identity = ? where user_id = ?",
+                params![identity, nostr_id],
+            )?;
+        } else {
+            self.connection.borrow().execute(
+                "UPDATE user set group_list = ? where user_id = ?",
+                params![group_list, nostr_id],
+            )?;
+        }
+        Ok(())
+    }
+
+    pub async fn load(
+        &self,
+        nostr_id: String,
+    ) -> Result<Option<(Vec<u8>, Option<String>)>, rusqlite::Error> {
+        let result = self
+            .connection
+            .borrow()
+            .query_row(
+                "select identity, group_list from user where user_id = ?",
+                params![nostr_id],
+                |row| {
+                    let identity: Vec<u8> = row.get(0)?; // Get the identity
+                    let group_list: Option<String> = row.get(1)?; // Get the group_list
+                    Ok((identity, group_list))
+                },
+            )
+            .optional()?;
+        Ok(result)
+    }
+}
