@@ -44,7 +44,8 @@ impl MlsUser {
             .map_err(|_| anyhow::anyhow!("Failed to acquire read lock"))?;
         let identity = serde_json::to_vec(&*identity)?;
         let group_list = serde_json::to_string(&self.group_list)?;
-        let result = self.provider
+        let result = self
+            .provider
             .storage()
             .save(nostr_id, identity, group_list)
             .await;
@@ -57,18 +58,15 @@ impl MlsUser {
         }
     }
 
-    pub async fn update(
-        &mut self,
-        nostr_id: String,
-        is_identity: bool,
-    ) -> Result<()> {
+    pub async fn update(&mut self, nostr_id: String, is_identity: bool) -> Result<()> {
         let identity = self
             .identity
             .read()
             .map_err(|_| anyhow::anyhow!("Failed to acquire read lock"))?;
         let identity = serde_json::to_vec(&*identity)?;
         let group_list = serde_json::to_string(&self.group_list)?;
-        let result = self.provider
+        let result = self
+            .provider
             .storage()
             .update(nostr_id, is_identity, identity, group_list)
             .await;
@@ -81,10 +79,7 @@ impl MlsUser {
         }
     }
 
-    pub async fn load(
-        provider: OpenMlsRustPersistentCrypto,
-        nostr_id: String,
-    ) -> Result<MlsUser> {
+    pub async fn load(provider: OpenMlsRustPersistentCrypto, nostr_id: String) -> Result<MlsUser> {
         let result = provider.storage().load(nostr_id.clone()).await?;
         let mut user = Self::new(provider, nostr_id.clone()).await?;
 

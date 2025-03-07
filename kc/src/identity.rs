@@ -45,6 +45,7 @@ impl Identity {
         crypto: &OpenMlsRustPersistentCrypto,
     ) -> KeyPackage {
         let key_package = KeyPackage::builder()
+            // .key_package_extensions(extensions)
             .build(
                 ciphersuite,
                 crypto,

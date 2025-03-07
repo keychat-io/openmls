@@ -4,6 +4,9 @@ use openmls::credentials::CredentialWithKey;
 use openmls::extensions::Extensions;
 use openmls::group::{GroupId, MlsGroup, MlsGroupCreateConfig};
 use openmls::key_packages::KeyPackage;
+use openmls::prelude::Extension;
+use openmls::prelude::MlsMessageBodyOut;
+use openmls::prelude::UnknownExtension;
 use openmls::prelude::{
     LeafNodeParameters, Member, MlsMessageIn, ProcessedMessageContent, Proposal, Sender,
     StagedWelcome,
@@ -12,6 +15,7 @@ use openmls::storage::OpenMlsProvider;
 use openmls_sqlite_storage::Connection;
 use openmls_traits::signatures::Signer;
 use openmls_traits::types::Ciphersuite;
+
 use std::io::{stdout, Write};
 pub(crate) const CIPHERSUITE: Ciphersuite =
     Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -28,21 +32,29 @@ async fn basic_test_create_group() {
     const MESSAGE_1: &str = "First msg alice to bob.";
 
     let group_id = "G1".to_string();
-    let alice = "Alice";
-    let bob = "Bob";
-    let charlie = "Charlie";
-    let tom = "Tom";
+    let alice = "0x001_Alice";
+    let bob = "0x002_Bob";
+    let charlie = "0x_003_Charlie";
+    let tom = "0x004_Tom";
 
     let db_path = "./mls-lite.sqlite";
     let connection = Connection::open(db_path).unwrap();
     let mut storage = openmls_sqlite_storage::SqliteStorageProvider::new(connection);
     storage.initialize().unwrap();
 
+    const UNKNOWN_EXTENSION_TYPE: u16 = 0xff11;
     let provider = OpenMlsRustPersistentCrypto::new(storage).await;
+    let extension = Extension::Unknown(
+        UNKNOWN_EXTENSION_TYPE,
+        UnknownExtension(group_id.as_bytes().to_vec()),
+    );
+    let group_context_extensions = Extensions::single(extension.clone());
 
     // NOTE: Since the DS currently doesn't distribute copies of the group's ratchet
     // tree, we need to include the ratchet_tree_extension.
     let group_create_config = MlsGroupCreateConfig::builder()
+        .with_group_context_extensions(group_context_extensions)
+        .expect("error adding group context extension to builder")
         .use_ratchet_tree_extension(true)
         .build();
 
@@ -66,6 +78,23 @@ async fn basic_test_create_group() {
     )
     .expect("Failed to create MlsGroup");
 
+    println!(
+        "identity_alice.identity_as_string() {:?}",
+        identity_alice.identity_as_string()
+    );
+
+    println!(
+        "alice_mls_group.serialized_content is {:?}",
+        String::from_utf8(
+            alice_mls_group
+                .credential()
+                .unwrap()
+                .serialized_content()
+                .to_vec()
+        )
+        .unwrap()
+    );
+
     // identity (credential_with_key) can use nostr public key instead
     // group_id and group_create_config should send to all
     // alice should know bob bob_key_package(bob should send this to alice),
@@ -74,6 +103,7 @@ async fn basic_test_create_group() {
     // // invite and remove need to execute this func merge_pending_commit()
 
     // === Alice adds Bob ===
+    // commit, welcome, group_info
     let welcome = match alice_mls_group.add_members(
         &provider,
         &identity_alice.signer,
@@ -82,6 +112,19 @@ async fn basic_test_create_group() {
         Ok((_, welcome, _)) => welcome,
         Err(e) => panic!("Could not add member to group: {e:?}"),
     };
+
+    match welcome.body() {
+        MlsMessageBodyOut::PrivateMessage(private_msg) => {
+            println!("Received a private message: {:?}", private_msg.content_type);
+        }
+        // return Welcome
+        MlsMessageBodyOut::Welcome(welcome_msg) => {
+            println!("Received a welcome message: {:?}", welcome_msg);
+        }
+        _ => {
+            println!("None");
+        }
+    }
 
     // Check that we received the correct proposals
     if let Some(staged_commit) = alice_mls_group.pending_commit() {
@@ -113,11 +156,38 @@ async fn basic_test_create_group() {
     .into_group(&provider)
     .expect("Error creating group from StagedWelcome");
 
+    // === Verify the initial group context extension data is correct ===
+    let group_context_extensions = bob_mls_group.extensions();
+    let mut extracted_data = None;
+    for extension in group_context_extensions.iter() {
+        if let Extension::Unknown(UNKNOWN_EXTENSION_TYPE, UnknownExtension(data)) = extension {
+            extracted_data = Some(data.clone());
+        }
+    }
+    assert_eq!(
+        extracted_data.unwrap(),
+        group_id.as_bytes().to_vec(),
+        "The data of Extension::Unknown(0x001) does not match the expected data"
+    );
+
     // === Alice sends a message to Bob ===
     let message_out = alice_mls_group
         .create_message(&provider, &identity_alice.signer, MESSAGE_1.as_bytes())
         .map_err(|e| format!("{e}"))
         .unwrap();
+
+    match message_out.0.body() {
+        // will return Application
+        MlsMessageBodyOut::PrivateMessage(private_msg) => {
+            println!("Received a private message: {:?}", private_msg.content_type);
+        }
+        MlsMessageBodyOut::Welcome(welcome_msg) => {
+            println!("Received a welcome message: {:?}", welcome_msg);
+        }
+        _ => {
+            println!("None");
+        }
+    }
 
     let processed_message = bob_mls_group
         .process_message(
@@ -147,7 +217,21 @@ async fn basic_test_create_group() {
             LeafNodeParameters::default(),
         )
         .unwrap();
+
     let queued_message = commit_message_bundle.commit();
+
+    match queued_message.body() {
+        // will return Commit
+        MlsMessageBodyOut::PrivateMessage(private_msg) => {
+            println!("Received a private message: {:?}", private_msg.content_type);
+        }
+        MlsMessageBodyOut::Welcome(welcome_msg) => {
+            println!("Received a welcome message: {:?}", welcome_msg);
+        }
+        _ => {
+            println!("None");
+        }
+    }
 
     let alice_processed_message = alice_mls_group
         .process_message(
@@ -817,6 +901,22 @@ async fn basic_test_create_group() {
     let queued_message = tom_group
         .leave_group(&provider, &identity_tom.signer)
         .expect("Could not leave group");
+
+    match queued_message.body() {
+        // will return Proposal
+        MlsMessageBodyOut::PrivateMessage(private_msg) => {
+            println!(
+                "leave_group Received a private message: {:?}",
+                private_msg.content_type
+            );
+        }
+        MlsMessageBodyOut::Welcome(welcome_msg) => {
+            println!("leave_group Received a welcome message: {:?}", welcome_msg);
+        }
+        _ => {
+            println!("None");
+        }
+    }
 
     let alice_processed_message = alice_mls_group
         .process_message(

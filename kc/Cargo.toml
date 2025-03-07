@@ -5,6 +5,7 @@ authors = ["OpenMLS Authors"]
 edition = "2021"
 
 [dependencies]
+rand = "0.8"
 anyhow = "1.0.57"
 base64 = "0.13"
 log = "0.4"

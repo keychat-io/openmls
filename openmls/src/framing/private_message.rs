@@ -30,7 +30,7 @@ use super::*;
 pub struct PrivateMessage {
     pub(crate) group_id: GroupId,
     pub(crate) epoch: GroupEpoch,
-    pub(crate) content_type: ContentType,
+    pub content_type: ContentType,
     pub(crate) authenticated_data: VLBytes,
     pub(crate) encrypted_sender_data: VLBytes,
     pub(crate) ciphertext: VLBytes,
