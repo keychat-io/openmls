@@ -4,6 +4,7 @@ use openmls_traits::OpenMlsProvider;
 use std::collections::HashMap;
 
 use super::{openmls_rust_persistent_crypto::OpenMlsRustPersistentCrypto, serialize_any_hashmap};
+use openmls_traits::storage::StorageProvider;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Identity {
@@ -76,5 +77,21 @@ impl Identity {
         std::str::from_utf8(self.credential_with_key.credential.serialized_content())
             .unwrap()
             .to_string()
+    }
+
+    pub fn delete_key_package_from_storage(
+        &mut self,
+        key_package: KeyPackage,
+        crypto: &OpenMlsRustPersistentCrypto,
+    ) -> Result<(), anyhow::Error> {
+        let hash_ref = key_package
+            .hash_ref(crypto.crypto())
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        self.kp.remove(&hash_ref.as_slice().to_vec());
+
+        crypto
+            .storage()
+            .delete_key_package(&hash_ref)
+            .map_err(|e| anyhow::anyhow!(e.to_string()))
     }
 }
