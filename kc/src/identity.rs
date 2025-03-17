@@ -2,8 +2,8 @@ use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use std::collections::HashMap;
 
-use crate::user::CIPHERSUITE;
 use super::{openmls_rust_persistent_crypto::OpenMlsRustPersistentCrypto, serialize_any_hashmap};
+use crate::user::CIPHERSUITE;
 use openmls_traits::{storage::StorageProvider, OpenMlsProvider};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -45,7 +45,7 @@ impl Identity {
         }
     }
 
-    pub fn create_capabilities(&self) -> Result<Capabilities, anyhow::Error>{
+    pub fn create_capabilities(&self) -> Result<Capabilities, anyhow::Error> {
         let capabilities: Capabilities = Capabilities::new(
             None,
             Some(&[CIPHERSUITE]),
@@ -64,7 +64,6 @@ impl Identity {
         crypto: &OpenMlsRustPersistentCrypto,
         capabilities: Capabilities,
     ) -> KeyPackage {
-
         let key_package = KeyPackage::builder()
             // .key_package_extensions(extensions)
             // .leaf_node_extensions(extensions)

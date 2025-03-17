@@ -7,8 +7,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::RwLock,
 };
-pub const CIPHERSUITE: Ciphersuite =
-    Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+pub const CIPHERSUITE: Ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
 #[derive(Debug)]
 pub struct Group {

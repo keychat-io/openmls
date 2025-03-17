@@ -4,6 +4,7 @@ use openmls::credentials::CredentialWithKey;
 use openmls::extensions::Extensions;
 use openmls::group::{GroupId, MlsGroup, MlsGroupCreateConfig};
 use openmls::key_packages::KeyPackage;
+use openmls::prelude::Capabilities;
 use openmls::prelude::MlsMessageBodyOut;
 use openmls::prelude::UnknownExtension;
 use openmls::prelude::{Extension, LeafNode};
@@ -15,7 +16,6 @@ use openmls::storage::OpenMlsProvider;
 use openmls_sqlite_storage::Connection;
 use openmls_traits::signatures::Signer;
 use openmls_traits::types::Ciphersuite;
-use openmls::prelude::Capabilities;
 
 use std::io::{stdout, Write};
 pub(crate) const CIPHERSUITE: Ciphersuite =
@@ -67,10 +67,12 @@ async fn basic_test_create_group() {
 
     let mut identity_bob = Identity::new(CIPHERSUITE, &provider, bob.as_bytes());
 
-    let bob_key_package = identity_bob.add_key_package(CIPHERSUITE, &provider, capabilities.clone());
+    let bob_key_package =
+        identity_bob.add_key_package(CIPHERSUITE, &provider, capabilities.clone());
 
     let mut identity_charlie = Identity::new(CIPHERSUITE, &provider, charlie.as_bytes());
-    let charlie_key_package = identity_charlie.add_key_package(CIPHERSUITE, &provider, capabilities.clone());
+    let charlie_key_package =
+        identity_charlie.add_key_package(CIPHERSUITE, &provider, capabilities.clone());
 
     let mut identity_tom = Identity::new(CIPHERSUITE, &provider, tom.as_bytes());
     let tom_key_package = identity_tom.add_key_package(CIPHERSUITE, &provider, capabilities);
