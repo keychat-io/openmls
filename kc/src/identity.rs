@@ -1,10 +1,10 @@
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::OpenMlsProvider;
 use std::collections::HashMap;
 
+use crate::user::CIPHERSUITE;
 use super::{openmls_rust_persistent_crypto::OpenMlsRustPersistentCrypto, serialize_any_hashmap};
-use openmls_traits::storage::StorageProvider;
+use openmls_traits::{storage::StorageProvider, OpenMlsProvider};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Identity {
@@ -16,6 +16,13 @@ pub struct Identity {
     pub credential_with_key: CredentialWithKey,
     pub signer: SignatureKeyPair,
 }
+
+pub const REQUIRED_EXTENSIONS: &[ExtensionType] = &[
+    ExtensionType::RequiredCapabilities,
+    ExtensionType::LastResort,
+    ExtensionType::RatchetTree,
+    ExtensionType::Unknown(0xF233), // Nostr Group Data Extension
+];
 
 impl Identity {
     pub fn new(
@@ -38,15 +45,30 @@ impl Identity {
         }
     }
 
+    pub fn create_capabilities(&self) -> Result<Capabilities, anyhow::Error>{
+        let capabilities: Capabilities = Capabilities::new(
+            None,
+            Some(&[CIPHERSUITE]),
+            Some(REQUIRED_EXTENSIONS),
+            None,
+            None,
+        );
+        Ok(capabilities)
+    }
+
     /// Create an additional key package using the credential_with_key/signer
     /// bound to this identity
     pub fn add_key_package(
         &mut self,
         ciphersuite: Ciphersuite,
         crypto: &OpenMlsRustPersistentCrypto,
+        capabilities: Capabilities,
     ) -> KeyPackage {
+
         let key_package = KeyPackage::builder()
             // .key_package_extensions(extensions)
+            // .leaf_node_extensions(extensions)
+            .leaf_node_capabilities(capabilities)
             .build(
                 ciphersuite,
                 crypto,

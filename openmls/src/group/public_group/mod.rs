@@ -376,6 +376,10 @@ impl PublicGroup {
         self.treesync().full_leave_members()
     }
 
+    pub fn leaf_nodes(&self) -> impl Iterator<Item = &LeafNode> + '_ {
+        self.treesync().full_leaves()
+    }
+
     /// Export the nodes of the public tree.
     pub fn export_ratchet_tree(&self) -> RatchetTree {
         self.treesync().export_ratchet_tree()

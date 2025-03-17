@@ -477,7 +477,7 @@ impl TreeSync {
     }
 
     /// Returns an iterator over the (non-blank) [`LeafNode`]s in the tree.
-    pub(crate) fn full_leaves(&self) -> impl Iterator<Item = &LeafNode> {
+    pub fn full_leaves(&self) -> impl Iterator<Item = &LeafNode> {
         self.tree
             .leaves()
             .filter_map(|(_, tsn)| tsn.node().as_ref())

@@ -269,6 +269,10 @@ impl MlsGroup {
         self.public_group().members()
     }
 
+    pub fn leaf_nodes(&self) -> impl Iterator<Item = &LeafNode> + '_ {
+        self.public_group().leaf_nodes()
+    }
+
     /// Returns the [`Credential`] of a member corresponding to the given
     /// leaf index. Returns `None` if the member can not be found in this group.
     pub fn member(&self, leaf_index: LeafNodeIndex) -> Option<&Credential> {

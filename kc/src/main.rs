@@ -4,9 +4,9 @@ use openmls::credentials::CredentialWithKey;
 use openmls::extensions::Extensions;
 use openmls::group::{GroupId, MlsGroup, MlsGroupCreateConfig};
 use openmls::key_packages::KeyPackage;
-use openmls::prelude::Extension;
 use openmls::prelude::MlsMessageBodyOut;
 use openmls::prelude::UnknownExtension;
+use openmls::prelude::{Extension, LeafNode};
 use openmls::prelude::{
     LeafNodeParameters, Member, MlsMessageIn, ProcessedMessageContent, Proposal, Sender,
     StagedWelcome,
@@ -15,6 +15,7 @@ use openmls::storage::OpenMlsProvider;
 use openmls_sqlite_storage::Connection;
 use openmls_traits::signatures::Signer;
 use openmls_traits::types::Ciphersuite;
+use openmls::prelude::Capabilities;
 
 use std::io::{stdout, Write};
 pub(crate) const CIPHERSUITE: Ciphersuite =
@@ -42,7 +43,7 @@ async fn basic_test_create_group() {
     let mut storage = openmls_sqlite_storage::SqliteStorageProvider::new(connection);
     storage.initialize().unwrap();
 
-    const UNKNOWN_EXTENSION_TYPE: u16 = 0xff11;
+    const UNKNOWN_EXTENSION_TYPE: u16 = 0xF233;
     let provider = OpenMlsRustPersistentCrypto::new(storage).await;
     let extension = Extension::Unknown(
         UNKNOWN_EXTENSION_TYPE,
@@ -50,24 +51,29 @@ async fn basic_test_create_group() {
     );
     let group_context_extensions = Extensions::single(extension.clone());
 
+    let identity_alice = Identity::new(CIPHERSUITE, &provider, alice.as_bytes());
+
     // NOTE: Since the DS currently doesn't distribute copies of the group's ratchet
     // tree, we need to include the ratchet_tree_extension.
+    let capabilities: Capabilities = identity_alice.create_capabilities().unwrap();
     let group_create_config = MlsGroupCreateConfig::builder()
-        .with_group_context_extensions(group_context_extensions)
+        .capabilities(capabilities.clone())
+        .with_group_context_extensions(group_context_extensions.clone())
         .expect("error adding group context extension to builder")
+        // .with_group_context_extensions(group_context_extensions)
+        // .expect("error adding group context extension to builder")
         .use_ratchet_tree_extension(true)
         .build();
 
-    let identity_alice = Identity::new(CIPHERSUITE, &provider, alice.as_bytes());
-
     let mut identity_bob = Identity::new(CIPHERSUITE, &provider, bob.as_bytes());
-    let bob_key_package = identity_bob.add_key_package(CIPHERSUITE, &provider);
+
+    let bob_key_package = identity_bob.add_key_package(CIPHERSUITE, &provider, capabilities.clone());
 
     let mut identity_charlie = Identity::new(CIPHERSUITE, &provider, charlie.as_bytes());
-    let charlie_key_package = identity_charlie.add_key_package(CIPHERSUITE, &provider);
+    let charlie_key_package = identity_charlie.add_key_package(CIPHERSUITE, &provider, capabilities.clone());
 
     let mut identity_tom = Identity::new(CIPHERSUITE, &provider, tom.as_bytes());
-    let tom_key_package = identity_tom.add_key_package(CIPHERSUITE, &provider);
+    let tom_key_package = identity_tom.add_key_package(CIPHERSUITE, &provider, capabilities);
 
     let mut alice_mls_group = MlsGroup::new_with_group_id(
         &provider,
@@ -104,14 +110,15 @@ async fn basic_test_create_group() {
 
     // === Alice adds Bob ===
     // commit, welcome, group_info
-    let welcome = match alice_mls_group.add_members(
+    let (welcome, _group_info) = match alice_mls_group.add_members(
         &provider,
         &identity_alice.signer,
         &[bob_key_package.into()],
     ) {
-        Ok((_, welcome, _)) => welcome,
+        Ok((_, welcome, group_info)) => (welcome, group_info),
         Err(e) => panic!("Could not add member to group: {e:?}"),
     };
+    // println!("groupInfo is {:?}", group_info);
 
     match welcome.body() {
         MlsMessageBodyOut::PrivateMessage(private_msg) => {
@@ -119,7 +126,7 @@ async fn basic_test_create_group() {
         }
         // return Welcome
         MlsMessageBodyOut::Welcome(welcome_msg) => {
-            println!("Received a welcome message: {:?}", welcome_msg);
+            println!("Received a welcome message: {:?}", welcome_msg.secrets());
         }
         _ => {
             println!("None");
@@ -209,12 +216,23 @@ async fn basic_test_create_group() {
         );
     }
 
+    const UNKNOWN_EXTENSION_TYPE2: u16 = 0xF233;
+    let extension = Extension::Unknown(
+        UNKNOWN_EXTENSION_TYPE2,
+        UnknownExtension("test".as_bytes().to_vec()),
+    );
+    let leaf_extensions = Extensions::single(extension.clone());
+
     // === Bob updates and commits ===
     let commit_message_bundle = bob_mls_group
         .self_update(
             &provider,
             &identity_bob.signer,
-            LeafNodeParameters::default(),
+            // LeafNodeParameters::default(),
+            LeafNodeParameters::builder()
+                .with_extensions(leaf_extensions)
+                .build(),
+            // LeafNodeParameters::builder().build(),
         )
         .unwrap();
 
@@ -258,6 +276,35 @@ async fn basic_test_create_group() {
     bob_mls_group
         .merge_pending_commit(&provider)
         .expect("error merging pending commit");
+
+    let members = bob_mls_group.members().collect::<Vec<Member>>();
+    let credential0 = members[0].credential.serialized_content();
+    let credential1 = members[1].credential.serialized_content();
+    //after remove, bob_group members is "Alice", "Charlie", "Tom"
+    println!(
+        "after remove, bob_group members is {:?}, {:?}",
+        String::from_utf8(credential0.to_vec()).unwrap(),
+        String::from_utf8(credential1.to_vec()).unwrap(),
+    );
+
+    let leaf_nodes = bob_mls_group.leaf_nodes().collect::<Vec<&LeafNode>>();
+    // println!("leaf nodes is {:?}", leaf_nodes);
+    let credential0 = leaf_nodes[0].credential().serialized_content();
+    let extension0 = leaf_nodes[0].extensions();
+    let credential1 = leaf_nodes[1].credential().serialized_content();
+    let extension1 = leaf_nodes[1].extensions();
+    println!(
+        "after update, bob_group members is {:?}, {:?}",
+        String::from_utf8(credential0.to_vec()).unwrap(),
+        String::from_utf8(credential1.to_vec()).unwrap(),
+    );
+
+    println!(
+        "after update, extensions is {:?}, {:?}",
+        extension0, extension1,
+    );
+
+    return;
 
     // === Alice updates and commits ===
     let (queued_message, _welcome_option) = alice_mls_group

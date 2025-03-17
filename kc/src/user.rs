@@ -2,13 +2,13 @@ use crate::identity::Identity;
 use crate::openmls_rust_persistent_crypto::OpenMlsRustPersistentCrypto;
 use anyhow::Result;
 pub use openmls::group::{GroupId, Member, MlsGroup, MlsGroupCreateConfig, MlsGroupJoinConfig};
-use openmls_traits::types::Ciphersuite;
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::sync::RwLock;
-pub(crate) const CIPHERSUITE: Ciphersuite =
+use openmls_traits::{types::Ciphersuite, OpenMlsProvider};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::RwLock,
+};
+pub const CIPHERSUITE: Ciphersuite =
     Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
-use openmls_traits::OpenMlsProvider;
 
 #[derive(Debug)]
 pub struct Group {

@@ -20,9 +20,7 @@ use crate::{
     STORAGE_PROVIDER_VERSION,
 };
 use openmls_traits::storage::{Entity, Key, StorageProvider};
-use rusqlite::params;
-use rusqlite::Connection;
-use rusqlite::OptionalExtension;
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
 refinery::embed_migrations!("migrations");
