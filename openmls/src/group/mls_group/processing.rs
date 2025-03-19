@@ -16,6 +16,52 @@ use crate::{
 use super::{errors::ProcessMessageError, *};
 
 impl MlsGroup {
+    pub fn sender_leaf_node_index<Provider: OpenMlsProvider>(
+        &mut self,
+        provider: &Provider,
+        message: impl Into<ProtocolMessage>,
+    ) -> Result<LeafNodeIndex, ProcessMessageError> {
+        // Make sure we are still a member of the group
+        if !self.is_active() {
+            return Err(ProcessMessageError::GroupStateError(
+                MlsGroupStateError::UseAfterEviction,
+            ));
+        }
+        let message = message.into();
+        // Check that handshake messages are compatible with the incoming wire format
+        // policy
+        if !message.is_external()
+            && message.is_handshake_message()
+            && !self
+                .configuration()
+                .wire_format_policy()
+                .incoming()
+                .is_compatible_with(message.wire_format())
+        {
+            return Err(ProcessMessageError::IncompatibleWireFormat);
+        }
+
+        // check group_id and epoch info
+        self.public_group.validate_framing(&message)?;
+
+        match message {
+            ProtocolMessage::PublicMessage(_public_message) => {
+                return Err(ProcessMessageError::IncompatibleWireFormat);
+            }
+            ProtocolMessage::PrivateMessage(ciphertext) => {
+                let ciphersuite = self.ciphersuite();
+                let (message_secrets, _old_leaves) = self
+                    .message_secrets_and_leaves_mut(ciphertext.epoch())
+                    .map_err(|_| ProcessMessageError::IncompatibleWireFormat)?;
+
+                let sender_data = ciphertext
+                    .sender_data(message_secrets, provider.crypto(), ciphersuite)
+                    .map_err(|_| ProcessMessageError::IncompatibleWireFormat)?;
+                return Ok(sender_data.leaf_index);
+            }
+        }
+    }
+
     /// Parses incoming messages from the DS. Checks for syntactic errors and
     /// makes some semantic checks as well. If the input is an encrypted
     /// message, it will be decrypted. This processing function does syntactic
