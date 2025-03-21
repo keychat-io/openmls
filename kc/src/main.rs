@@ -5,7 +5,9 @@ use openmls::extensions::Extensions;
 use openmls::group::{GroupId, MlsGroup, MlsGroupCreateConfig};
 use openmls::key_packages::KeyPackage;
 use openmls::prelude::Capabilities;
+use openmls::prelude::ExtensionType;
 use openmls::prelude::MlsMessageBodyOut;
+use openmls::prelude::RequiredCapabilitiesExtension;
 use openmls::prelude::UnknownExtension;
 use openmls::prelude::{Extension, LeafNode};
 use openmls::prelude::{
@@ -49,7 +51,13 @@ async fn basic_test_create_group() {
         UNKNOWN_EXTENSION_TYPE,
         UnknownExtension(group_id.as_bytes().to_vec()),
     );
-    let group_context_extensions = Extensions::single(extension.clone());
+    let required_extension_types = &[ExtensionType::Unknown(UNKNOWN_EXTENSION_TYPE)];
+    let required_capabilities = Extension::RequiredCapabilities(
+        RequiredCapabilitiesExtension::new(required_extension_types, &[], &[]),
+    );
+    let group_context_extensions =
+        Extensions::from_vec(vec![extension.clone(), required_capabilities.clone()])
+            .expect("error creating test group context extensions");
 
     let identity_alice = Identity::new(CIPHERSUITE, &provider, alice.as_bytes());
 
@@ -173,11 +181,40 @@ async fn basic_test_create_group() {
             extracted_data = Some(data.clone());
         }
     }
+    println!("group_context_extensions is {:?}", extracted_data);
     assert_eq!(
         extracted_data.unwrap(),
         group_id.as_bytes().to_vec(),
         "The data of Extension::Unknown(0x001) does not match the expected data"
     );
+
+    let _update_extension = Extension::Unknown(
+        UNKNOWN_EXTENSION_TYPE,
+        UnknownExtension("test group".as_bytes().to_vec()),
+    );
+    // let mut updated_extensions = group_context_extensions.clone();
+    // updated_extensions.add_or_replace(update_extension);
+    // let updated_extensions = Extensions::from_vec(vec![
+    //     update_extension.clone(),
+    //     required_capabilities.clone(),
+    // ])
+    // .expect("error creating test group context extensions");
+    // let _update_result = alice_mls_group.update_group_context_extensions(
+    //     &provider,
+    //     updated_extensions,
+    //     &identity_alice.signer,
+    // );
+
+    // alice_mls_group.merge_pending_commit(&provider).unwrap();
+
+    let group_context_extensions = alice_mls_group.extensions();
+    let mut extracted_data = None;
+    for extension in group_context_extensions.iter() {
+        if let Extension::Unknown(UNKNOWN_EXTENSION_TYPE, UnknownExtension(data)) = extension {
+            extracted_data = Some(data.clone());
+        }
+    }
+    println!("group_context_extensions is {:?}", extracted_data);
 
     // === Alice sends a message to Bob ===
     let message_out = alice_mls_group

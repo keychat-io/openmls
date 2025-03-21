@@ -47,7 +47,7 @@ pub struct NostrGroupDataExtension {
 
 impl NostrGroupDataExtension {
     pub fn extension_type(&self) -> u16 {
-        0xF2EE // Be FREE
+        0xF233
     }
 
     /// Creates a new NostrGroupDataExtension with the given parameters.
@@ -108,7 +108,7 @@ impl NostrGroupDataExtension {
         let group_data_extension = match group_context
             .extensions()
             .iter()
-            .find(|ext| ext.extension_type() == ExtensionType::Unknown(0xF2EE))
+            .find(|ext| ext.extension_type() == ExtensionType::Unknown(0xF233))
         {
             Some(Extension::Unknown(_, ext)) => ext,
             Some(_) => return Err(NostrGroupDataExtensionError::UnexpectedExtensionType),
@@ -138,7 +138,7 @@ impl NostrGroupDataExtension {
         let group_data_extension = match group
             .extensions()
             .iter()
-            .find(|ext| ext.extension_type() == ExtensionType::Unknown(0xF2EE))
+            .find(|ext| ext.extension_type() == ExtensionType::Unknown(0xF233))
         {
             Some(Extension::Unknown(_, ext)) => ext,
             Some(_) => return Err(NostrGroupDataExtensionError::UnexpectedExtensionType),
@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn test_extension_type() {
         let extension = create_test_extension();
-        assert_eq!(extension.extension_type(), 0xF2EE);
+        assert_eq!(extension.extension_type(), 0xF233);
     }
 
     // TODO: from_group_context and from_group methods would need more complex

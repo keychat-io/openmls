@@ -21,7 +21,7 @@ pub const REQUIRED_EXTENSIONS: &[ExtensionType] = &[
     ExtensionType::RequiredCapabilities,
     ExtensionType::LastResort,
     ExtensionType::RatchetTree,
-    ExtensionType::Unknown(0xF233), // Nostr Group Data Extension
+    ExtensionType::Unknown(0xF233),
 ];
 
 impl Identity {
