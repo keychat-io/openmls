@@ -43,6 +43,7 @@ pub struct NostrGroupDataExtension {
     pub description: Vec<u8>,
     pub admin_pubkeys: Vec<Vec<u8>>,
     pub relays: Vec<Vec<u8>>,
+    pub status: Vec<u8>,
 }
 
 impl NostrGroupDataExtension {
@@ -71,6 +72,7 @@ impl NostrGroupDataExtension {
         description: String,
         admin_pubkeys_hex: Vec<String>,
         relays: Vec<String>,
+        status: String,
     ) -> Self {
         // Generate a random 32-byte group ID
         let mut rng = rand::thread_rng();
@@ -85,6 +87,7 @@ impl NostrGroupDataExtension {
                 .map(|identity| identity.into_bytes())
                 .collect(),
             relays: relays.into_iter().map(|relay| relay.into_bytes()).collect(),
+            status: status.into_bytes(),
         }
     }
 
@@ -177,6 +180,20 @@ impl NostrGroupDataExtension {
     /// * `name` - The new group name
     pub fn set_name(&mut self, name: String) {
         self.name = name.into_bytes();
+    }
+
+    /// Returns the group status as a UTF-8 string.
+    pub fn status(&self) -> String {
+        String::from_utf8_lossy(&self.status).to_string()
+    }
+
+    /// Sets the group status.
+    ///
+    /// # Arguments
+    ///
+    /// * `status` - The group status
+    pub fn set_status(&mut self, status: String) {
+        self.status = status.into_bytes();
     }
 
     /// Returns the group description as a UTF-8 string.
