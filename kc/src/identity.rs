@@ -64,10 +64,14 @@ impl Identity {
         crypto: &OpenMlsRustPersistentCrypto,
         capabilities: Capabilities,
     ) -> KeyPackage {
+        // // Build a KeyPackage with a last resort extension
+        // let last_resort = Extension::LastResort(LastResortExtension::default());
+        // let extensions = Extensions::single(last_resort);
         let key_package = KeyPackage::builder()
             // .key_package_extensions(extensions)
             // .leaf_node_extensions(extensions)
             .leaf_node_capabilities(capabilities)
+            .mark_as_last_resort()
             .build(
                 ciphersuite,
                 crypto,
