@@ -45,6 +45,19 @@ impl Identity {
         }
     }
 
+    pub fn ciphersuite_value(&self) -> u16 {
+        CIPHERSUITE.into()
+    }
+
+    pub fn extensions_value(&self) -> String {
+        REQUIRED_EXTENSIONS
+            .to_vec()
+            .iter()
+            .map(|e| format!("{:?}", e))
+            .collect::<Vec<String>>()
+            .join(",")
+    }
+
     pub fn create_capabilities(&self) -> Result<Capabilities, anyhow::Error> {
         let capabilities: Capabilities = Capabilities::new(
             None,
