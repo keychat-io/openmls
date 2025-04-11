@@ -5,16 +5,35 @@ use std::collections::HashMap;
 use super::{openmls_rust_persistent_crypto::OpenMlsRustPersistentCrypto, serialize_any_hashmap};
 use crate::user::CIPHERSUITE;
 use openmls_traits::{storage::StorageProvider, OpenMlsProvider};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct Identity {
-    #[serde(
-        serialize_with = "serialize_any_hashmap::serialize_hashmap",
-        deserialize_with = "serialize_any_hashmap::deserialize_hashmap"
-    )]
-    pub kp: HashMap<Vec<u8>, KeyPackage>,
-    pub credential_with_key: CredentialWithKey,
-    pub signer: SignatureKeyPair,
+pub struct KeyPackageWithTimestamp {
+    pub key_package: KeyPackage,
+    pub timestamp: u64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[serde(untagged)]
+pub enum KeyPackageValue {
+    Old(KeyPackage),
+    New(KeyPackageWithTimestamp),
+}
+
+impl KeyPackageValue {
+    pub fn get_key_package(&self) -> &KeyPackage {
+        match self {
+            KeyPackageValue::Old(kp) => kp,
+            KeyPackageValue::New(kp_with_ts) => &kp_with_ts.key_package,
+        }
+    }
+
+    pub fn get_timestamp(&self) -> u64 {
+        match self {
+            KeyPackageValue::Old(_) => 0, // for old return 0
+            KeyPackageValue::New(kp_with_ts) => kp_with_ts.timestamp,
+        }
+    }
 }
 
 pub const REQUIRED_EXTENSIONS: &[ExtensionType] = &[
@@ -23,6 +42,20 @@ pub const REQUIRED_EXTENSIONS: &[ExtensionType] = &[
     ExtensionType::RatchetTree,
     ExtensionType::Unknown(0xF233),
 ];
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct Identity {
+    #[serde(
+        serialize_with = "serialize_any_hashmap::serialize_hashmap",
+        deserialize_with = "serialize_any_hashmap::deserialize_hashmap"
+    )]
+    // add create time for kp
+    pub kp: HashMap<Vec<u8>, KeyPackageValue>,
+    pub credential_with_key: CredentialWithKey,
+    pub signer: SignatureKeyPair,
+    #[serde(default)]
+    pub is_upgraded: bool,
+}
 
 impl Identity {
     pub fn new(
@@ -42,6 +75,7 @@ impl Identity {
             kp: HashMap::from([]),
             credential_with_key,
             signer: signature_keys,
+            is_upgraded: false,
         }
     }
 
@@ -93,6 +127,16 @@ impl Identity {
             )
             .unwrap();
 
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("SystemTime before UNIX EPOCH!")
+            .as_secs();
+
+        let key_package_with_timestamp = KeyPackageWithTimestamp {
+            key_package: key_package.key_package().clone(),
+            timestamp: now,
+        };
+
         self.kp.insert(
             key_package
                 .key_package()
@@ -100,8 +144,9 @@ impl Identity {
                 .unwrap()
                 .as_slice()
                 .to_vec(),
-            key_package.key_package().clone(),
+            KeyPackageValue::New(key_package_with_timestamp),
         );
+
         key_package.key_package().clone()
     }
 
@@ -126,10 +171,74 @@ impl Identity {
             .hash_ref(crypto.crypto())
             .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         self.kp.remove(&hash_ref.as_slice().to_vec());
+        // self.kp.retain(|_, v| *v != &hash_ref.as_slice().to_vec());
 
         crypto
             .storage()
             .delete_key_package(&hash_ref)
             .map_err(|e| anyhow::anyhow!(e.to_string()))
+    }
+
+    pub fn delete_key_packages_by_timestamp(
+        &mut self,
+        timestamp: u64,
+        crypto: &OpenMlsRustPersistentCrypto,
+    ) -> Result<(), anyhow::Error> {
+        // first upgrade old key packages
+        let _is_upgrade = self.upgrade_old_key_packages();
+        // Collect all keys that need to be removed
+        let key_packages_to_remove: Vec<KeyPackage> = self
+            .kp
+            .iter()
+            .filter(|(_, v)| v.get_timestamp() < timestamp)
+            .map(|(_k, v)| v.get_key_package().clone())
+            .collect();
+
+        // Remove the key packages from storage and HashMap
+        for key_package in key_packages_to_remove {
+            let hash_ref = key_package
+                .hash_ref(crypto.crypto())
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+            self.kp.remove(&hash_ref.as_slice().to_vec());
+            crypto
+                .storage()
+                .delete_key_package(&hash_ref)
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn upgrade_old_key_packages(&mut self) -> bool {
+        if self.is_upgraded {
+            return false;
+        }
+        let mut to_upgrade = Vec::new();
+
+        // Find all old key packages
+        for (key, value) in &self.kp {
+            if let KeyPackageValue::Old(_) = value {
+                to_upgrade.push(key.clone());
+            }
+        }
+
+        // Upgrade them to new format
+        for key in to_upgrade {
+            if let Some(KeyPackageValue::Old(kp)) = self.kp.remove(&key) {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("SystemTime before UNIX EPOCH!")
+                    .as_secs();
+
+                let kp_with_ts = KeyPackageWithTimestamp {
+                    key_package: kp,
+                    timestamp: now,
+                };
+
+                self.kp.insert(key, KeyPackageValue::New(kp_with_ts));
+            }
+        }
+        self.is_upgraded = true;
+        true
     }
 }
