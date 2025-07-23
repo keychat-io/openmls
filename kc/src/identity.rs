@@ -80,7 +80,20 @@ impl Identity {
         // // Build a KeyPackage with a last resort extension
         // let last_resort = Extension::LastResort(LastResortExtension::default());
         // let extensions = Extensions::single(last_resort);
+        // use std::time::{SystemTime, UNIX_EPOCH};
+        // let now = SystemTime::now()
+        //     .duration_since(UNIX_EPOCH)
+        //     .expect("SystemTime before UNIX EPOCH!")
+        //     .as_secs();
+        // let not_before = now - 100;
+        // let not_after = now + 100;
+        // let lifetime = Lifetime {
+        //     not_before,
+        //     not_after,
+        // };
+        // println!("lifetime: {:?}", lifetime);
         let key_package = KeyPackage::builder()
+            // .key_package_lifetime(lifetime)
             // .key_package_extensions(extensions)
             // .leaf_node_extensions(extensions)
             .leaf_node_capabilities(capabilities)
