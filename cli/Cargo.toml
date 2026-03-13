@@ -3,22 +3,21 @@ name = "cli"
 version = "0.1.0"
 authors = ["OpenMLS Authors"]
 edition = "2021"
+publish = false
 
 [dependencies]
 url = "2.2"
-reqwest = { version = "0.12", features = ["blocking", "json"] }
+reqwest = { version = "0.13", features = ["blocking", "json"] }
 base64 = "0.22"
 log = "0.4"
 pretty_env_logger = "0.5"
 
 openmls = { path = "../openmls", features = ["test-utils"] }
 ds-lib = { path = "../delivery-service/ds-lib" }
-openmls_traits = { path = "../traits" }
-openmls_rust_crypto = { path = "../openmls_rust_crypto" }
-openmls_memory_storage = { path = "../memory_storage", features = [
-    "persistence",
-] }
-openmls_basic_credential = { path = "../basic_credential" }
+openmls_traits = { workspace = true }
+openmls_rust_crypto = { workspace = true }
+openmls_memory_storage = { workspace = true, features = ["persistence"] }
+openmls_basic_credential = { workspace = true }
 serde = { version = "^1.0" }
 thiserror = "2.0"
 serde_json = "1.0"

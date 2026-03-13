@@ -40,7 +40,7 @@ impl AeadKey {
     /// Create an `AeadKey` from a `Secret`. TODO: This function should
     /// disappear when tackling issue #103.
     pub(crate) fn from_secret(secret: Secret, ciphersuite: Ciphersuite) -> Self {
-        log::trace!("AeadKey::from_secret with {}", ciphersuite);
+        log::trace!("AeadKey::from_secret with {ciphersuite}");
         AeadKey {
             aead_mode: ciphersuite.aead_algorithm(),
             value: secret.value,
@@ -163,6 +163,8 @@ mod unit_tests {
     /// state.
     #[openmls_test::openmls_test]
     fn test_xor() {
+        let provider = &Provider::default();
+
         let reuse_guard: ReuseGuard =
             ReuseGuard::try_from_random(provider.rand()).expect("An unexpected error occurred.");
         let original_nonce = AeadNonce::random(provider.rand());

@@ -21,7 +21,7 @@ use crate::messages::group_info::VerifiableGroupInfo;
 
 /// An [`MlsMessageOut`] is typically returned from an [`MlsGroup`] function and
 /// meant to be serialized and sent to the DS.
-#[derive(Debug, Clone, PartialEq, TlsSerialize, TlsSize)]
+#[derive(Debug, Clone, PartialEq, TlsSerialize, TlsSize, serde::Serialize, serde::Deserialize)]
 pub struct MlsMessageOut {
     pub(crate) version: ProtocolVersion,
     pub(crate) body: MlsMessageBodyOut,
@@ -54,7 +54,7 @@ pub struct MlsMessageOut {
 ///     }
 /// } MLSMessage;
 /// ```
-#[derive(Debug, PartialEq, Clone, TlsSerialize, TlsSize)]
+#[derive(Debug, PartialEq, Clone, TlsSerialize, TlsSize, serde::Serialize, serde::Deserialize)]
 #[repr(u16)]
 pub enum MlsMessageBodyOut {
     /// Plaintext message
@@ -82,8 +82,6 @@ pub enum MlsMessageBodyOut {
 impl From<PublicMessage> for MlsMessageOut {
     fn from(public_message: PublicMessage) -> Self {
         Self {
-            // TODO #34: The version should be set explicitly here instead of
-            // the default.
             version: ProtocolVersion::default(),
             body: MlsMessageBodyOut::PublicMessage(public_message),
         }
@@ -93,8 +91,6 @@ impl From<PublicMessage> for MlsMessageOut {
 impl From<PrivateMessage> for MlsMessageOut {
     fn from(private_message: PrivateMessage) -> Self {
         Self {
-            // TODO #34: The version should be set explicitly here instead of
-            // the default.
             version: ProtocolVersion::default(),
             body: MlsMessageBodyOut::PrivateMessage(private_message),
         }

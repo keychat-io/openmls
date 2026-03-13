@@ -26,7 +26,9 @@ use super::*;
 ///     opaque ciphertext<V>;
 /// } PrivateMessage;
 /// ```
-#[derive(Debug, PartialEq, Eq, Clone, TlsSerialize, TlsSize)]
+#[derive(
+    Debug, PartialEq, Eq, Clone, TlsSerialize, TlsSize, serde::Serialize, serde::Deserialize,
+)]
 pub struct PrivateMessage {
     pub(crate) group_id: GroupId,
     pub(crate) epoch: GroupEpoch,
@@ -75,7 +77,7 @@ impl PrivateMessage {
         padding_size: usize,
     ) -> Result<PrivateMessage, MessageEncryptionError<T>> {
         log::debug!("PrivateMessage::try_from_authenticated_content");
-        log::trace!("  ciphersuite: {}", ciphersuite);
+        log::trace!("  ciphersuite: {ciphersuite}");
         // Check the message has the correct wire format
         if public_message.wire_format() != WireFormat::PrivateMessage {
             return Err(MessageEncryptionError::WrongWireFormat);
@@ -198,7 +200,7 @@ impl PrivateMessage {
                 &prepared_nonce,
             )
             .map_err(LibraryError::unexpected_crypto_error)?;
-        log::trace!("Encrypted ciphertext {:x?}", ciphertext);
+        log::trace!("Encrypted ciphertext {ciphertext:x?}");
         // Derive the sender data key from the key schedule using the ciphertext.
         let sender_data_key = message_secrets
             .sender_data_secret()
@@ -250,6 +252,11 @@ impl PrivateMessage {
             encrypted_sender_data: encrypted_sender_data.into(),
             ciphertext: ciphertext.into(),
         })
+    }
+
+    /// Returns the epoch of the message.
+    pub fn epoch(&self) -> GroupEpoch {
+        self.epoch
     }
 
     /// Returns `true` if this is a handshake message and `false` otherwise.

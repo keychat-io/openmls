@@ -1,7 +1,7 @@
 //! # Messages
 //!
-//! This module contains the types and implementations for Commit & Welcome messages,
-//! as well as Proposals & the group info used for External Commits.
+//! This module defines types and logic for Commit and Welcome messages, as well
+//! as Proposals and group info used in External Commits.
 
 use hash_ref::HashReference;
 use openmls_traits::{
@@ -59,7 +59,16 @@ use self::{proposals::*, proposals_in::ProposalOrRefIn};
 /// } Welcome;
 /// ```
 #[derive(
-    Clone, Debug, Eq, PartialEq, TlsDeserialize, TlsDeserializeBytes, TlsSerialize, TlsSize,
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    TlsDeserialize,
+    TlsDeserializeBytes,
+    TlsSerialize,
+    TlsSize,
+    serde::Serialize,
+    serde::Deserialize,
 )]
 pub struct Welcome {
     cipher_suite: Ciphersuite,
@@ -117,7 +126,16 @@ impl Welcome {
 ///
 /// This is part of a [`Welcome`] message. It can be used to correlate the correct secrets with each new member.
 #[derive(
-    Clone, Debug, Eq, PartialEq, TlsDeserialize, TlsDeserializeBytes, TlsSerialize, TlsSize,
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    TlsDeserialize,
+    TlsDeserializeBytes,
+    TlsSerialize,
+    TlsSize,
+    serde::Serialize,
+    serde::Deserialize,
 )]
 pub struct EncryptedGroupSecrets {
     /// Key package reference of the new member
@@ -231,28 +249,39 @@ impl CommitIn {
                 SenderContext::Member((group_id, leaf_index)) => {
                     TreePosition::new(group_id, leaf_index)
                 }
-                SenderContext::ExternalCommit((group_id, free_leaf_index)) => {
+                SenderContext::ExternalCommit {
+                    group_id,
+                    leftmost_blank_index,
+                    self_removes_in_store,
+                } => {
                     // We need to determine if it is a a resync or a join.
                     // Find the first remove proposal and extract the leaf index.
-                    let new_leaf_index = proposals
-                        .iter()
-                        .find_map(|p| match p {
-                            ProposalOrRef::Proposal(p) => match p {
-                                Proposal::Remove(r) => Some(r.removed()),
-                                _ => None,
-                            },
-                            ProposalOrRef::Reference(_) => None,
-                        })
-                        // The committer should always be in the left-most leaf.
-                        .map(|removed_index| {
-                            if removed_index < free_leaf_index {
-                                removed_index
-                            } else {
-                                free_leaf_index
-                            }
-                        })
-                        // If there is none, the External Commit was not a resync
-                        .unwrap_or(free_leaf_index);
+                    let former_sender_index = proposals.iter().find_map(|p| {
+                        p.as_proposal()
+                            .and_then(|p| p.as_remove())
+                            .map(|r| r.removed())
+                    });
+
+                    // Collect the sender indices of SelfRemoves that are part of
+                    // this commit.
+                    let self_removed_indices =
+                        self_removes_in_store.into_iter().filter_map(|self_remove| {
+                            proposals.iter().find_map(|committed_p| {
+                                committed_p.as_reference().and_then(|committed_p_ref| {
+                                    (&self_remove.proposal_ref == committed_p_ref)
+                                        .then_some(self_remove.sender)
+                                })
+                            })
+                        });
+
+                    let new_leaf_index = [leftmost_blank_index]
+                        .into_iter()
+                        .chain(former_sender_index)
+                        .chain(self_removed_indices)
+                        .min()
+                        .ok_or(ValidationError::LibraryError(LibraryError::custom(
+                            "The iterator should have at least one element.",
+                        )))?;
 
                     TreePosition::new(group_id, new_leaf_index)
                 }
@@ -262,6 +291,11 @@ impl CommitIn {
             None
         };
         Ok(Commit { proposals, path })
+    }
+
+    #[cfg(feature = "extensions-draft-08")]
+    pub(crate) fn proposals(&self) -> &[ProposalOrRefIn] {
+        &self.proposals
     }
 }
 

@@ -27,7 +27,8 @@ fn test_protocol_version() {
 
 #[test]
 fn that_unknown_credential_types_are_de_serialized_correctly() {
-    let credential_types = [0x0000u16, 0x0A0A, 0x7A7A, 0xF000, 0xFFFF];
+    // Use non-GREASE unknown values for testing (GREASE values have pattern 0x_A_A)
+    let credential_types = [0x0000u16, 0x0B0B, 0x7C7C, 0xF000, 0xFFFF];
 
     for credential_type in credential_types.into_iter() {
         // Construct an unknown credential type.
@@ -40,7 +41,7 @@ fn that_unknown_credential_types_are_de_serialized_correctly() {
             CredentialType::Other(got_proposal_type) => {
                 assert_eq!(credential_type, got_proposal_type);
             }
-            other => panic!("Expected `CredentialType::Unknown`, got `{:?}`.", other),
+            other => panic!("Expected `CredentialType::Unknown`, got `{other:?}`."),
         }
 
         // Test serialization.

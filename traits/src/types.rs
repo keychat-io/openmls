@@ -6,7 +6,8 @@ use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};
 use tls_codec::{
-    SecretVLBytes, TlsDeserialize, TlsDeserializeBytes, TlsSerialize, TlsSize, VLBytes,
+    SecretVLBytes, TlsDeserialize, TlsDeserializeBytes, TlsSerialize, TlsSerializeBytes, TlsSize,
+    VLBytes,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
@@ -85,6 +86,7 @@ impl HashType {
     Serialize,
     Deserialize,
     TlsSerialize,
+    TlsSerializeBytes,
     TlsDeserialize,
     TlsDeserializeBytes,
     TlsSize,
@@ -181,7 +183,7 @@ pub enum HpkeKemType {
     DhKem448 = 0x0021,
 
     /// XWing combiner for ML-KEM and X25519
-    XWingKemDraft2 = 0x004D,
+    XWingKemDraft6 = 0x004D,
 }
 
 /// KDF Types for HPKE
@@ -322,11 +324,34 @@ impl VerifiableCiphersuite {
     pub fn new(value: u16) -> Self {
         Self(value)
     }
+
+    /// Returns the raw u16 value of this ciphersuite.
+    pub fn value(&self) -> u16 {
+        self.0
+    }
+
+    /// Returns true if this is a GREASE ciphersuite value.
+    ///
+    /// GREASE values are used to ensure implementations properly handle unknown
+    /// ciphersuites. See [RFC 9420 Section 13.5](https://www.rfc-editor.org/rfc/rfc9420.html#section-13.5).
+    ///
+    /// GREASE ciphersuites cannot be used for actual cryptographic operations.
+    pub fn is_grease(&self) -> bool {
+        crate::grease::is_grease_value(self.0)
+    }
 }
 
 impl From<Ciphersuite> for VerifiableCiphersuite {
     fn from(value: Ciphersuite) -> Self {
         Self(value as u16)
+    }
+}
+
+impl TryFrom<VerifiableCiphersuite> for Ciphersuite {
+    type Error = tls_codec::Error;
+
+    fn try_from(value: VerifiableCiphersuite) -> Result<Self, Self::Error> {
+        Ciphersuite::try_from(value.0)
     }
 }
 
@@ -548,7 +573,7 @@ impl Ciphersuite {
             Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => HpkeKemType::DhKemP384,
             Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => HpkeKemType::DhKemP521,
             Ciphersuite::MLS_256_XWING_CHACHA20POLY1305_SHA256_Ed25519 => {
-                HpkeKemType::XWingKemDraft2
+                HpkeKemType::XWingKemDraft6
             }
         }
     }

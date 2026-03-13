@@ -34,8 +34,7 @@ use self::{
     diff::{StagedTreeSyncDiff, TreeSyncDiff},
     node::{
         leaf_node::{
-            Capabilities, LeafNodeSource, NewLeafNodeParams, TreeInfoTbs, TreePosition,
-            VerifiableLeafNode,
+            Capabilities, NewLeafNodeParams, TreeInfoTbs, TreePosition, VerifiableLeafNode,
         },
         NodeIn,
     },
@@ -46,7 +45,7 @@ use crate::binary_tree::array_representation::ParentNodeIndex;
 use crate::{binary_tree::array_representation::level, test_utils::bytes_to_hex};
 use crate::{
     binary_tree::{
-        array_representation::{is_node_in_tree, tree::TreeNode, LeafNodeIndex, TreeSize},
+        array_representation::{is_node_in_tree, LeafNodeIndex, TreeSize},
         MlsBinaryTree, MlsBinaryTreeError,
     },
     ciphersuite::{signable::Verifiable, Secret},
@@ -80,7 +79,10 @@ pub use node::encryption_keys::EncryptionKey;
 
 // Public re-exports
 pub use node::{
-    leaf_node::{LeafNode, LeafNodeParameters, LeafNodeParametersBuilder, LeafNodeUpdateError},
+    leaf_node::{
+        LeafNode, LeafNodeParameters, LeafNodeParametersBuilder, LeafNodeSource,
+        LeafNodeUpdateError,
+    },
     parent_node::ParentNode,
     Node,
 };
@@ -171,7 +173,7 @@ impl RatchetTree {
                                 .into_signature_public_key_enriched(
                                     ciphersuite.signature_algorithm(),
                                 );
-                            Some(Node::LeafNode(match verifiable_leaf_node {
+                            Some(Node::leaf_node(match verifiable_leaf_node {
                                 VerifiableLeafNode::KeyPackage(leaf_node) => leaf_node
                                     .verify(crypto, &signature_key)
                                     .map_err(|_| RatchetTreeError::InvalidNodeSignature)?,
@@ -369,7 +371,7 @@ impl fmt::Display for RatchetTree {
 /// merging a diff.
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "test-utils"), derive(PartialEq, Clone))]
-pub(crate) struct TreeSync {
+pub struct TreeSync {
     tree: MlsBinaryTree<TreeSyncLeafNode, TreeSyncParentNode>,
     tree_hash: Vec<u8>,
 }
@@ -386,7 +388,7 @@ impl TreeSync {
         credential_with_key: CredentialWithKey,
         life_time: Lifetime,
         capabilities: Capabilities,
-        extensions: Extensions,
+        extensions: Extensions<LeafNode>,
     ) -> Result<(Self, CommitSecret, EncryptionKeyPair), LibraryError> {
         let new_leaf_node_params = NewLeafNodeParams {
             ciphersuite,
@@ -399,7 +401,7 @@ impl TreeSync {
         };
         let (leaf, encryption_key_pair) = LeafNode::new(provider, signer, new_leaf_node_params)?;
 
-        let node = Node::LeafNode(leaf);
+        let node = Node::leaf_node(leaf);
         let path_secret: PathSecret = Secret::random(ciphersuite, provider.rand())
             .map_err(LibraryError::unexpected_crypto_error)?
             .into();
@@ -419,6 +421,11 @@ impl TreeSync {
         Ok((tree_sync, commit_secret, encryption_key_pair))
     }
 
+    /// Return the full tree
+    pub(crate) fn tree(&self) -> &MlsBinaryTree<TreeSyncLeafNode, TreeSyncParentNode> {
+        &self.tree
+    }
+
     /// Return the tree hash of the root node of the tree.
     pub(crate) fn tree_hash(&self) -> &[u8] {
         self.tree_hash.as_slice()
@@ -434,7 +441,7 @@ impl TreeSync {
 
     /// Create an empty diff based on this [`TreeSync`] instance all operations
     /// are created based on an initial, empty [`TreeSyncDiff`].
-    pub(crate) fn empty_diff(&self) -> TreeSyncDiff {
+    pub(crate) fn empty_diff(&self) -> TreeSyncDiff<'_> {
         self.into()
     }
 
@@ -447,25 +454,43 @@ impl TreeSync {
         ratchet_tree: RatchetTree,
     ) -> Result<Self, TreeSyncFromNodesError> {
         // TODO #800: Unmerged leaves should be checked
-        let mut ts_nodes: Vec<TreeNode<TreeSyncLeafNode, TreeSyncParentNode>> =
-            Vec::with_capacity(ratchet_tree.0.len());
+        let total_nodes = ratchet_tree.0.len();
+        let mut leaf_nodes = Vec::with_capacity(total_nodes.div_ceil(2));
+        let mut parent_nodes = Vec::with_capacity(total_nodes / 2);
 
         // Set the leaf indices in all the leaves and convert the node types.
         for (node_index, node_option) in ratchet_tree.0.into_iter().enumerate() {
-            let ts_node_option: TreeNode<TreeSyncLeafNode, TreeSyncParentNode> = match node_option {
-                Some(node) => TreeSyncNode::from(node).into(),
-                None => {
-                    if node_index % 2 == 0 {
-                        TreeNode::Leaf(TreeSyncLeafNode::blank())
-                    } else {
-                        TreeNode::Parent(TreeSyncParentNode::blank())
-                    }
-                }
-            };
-            ts_nodes.push(ts_node_option);
+            if node_index % 2 == 0 {
+                let leaf = match node_option {
+                    Some(node) => match TreeSyncNode::from(node) {
+                        TreeSyncNode::Leaf(l) => *l,
+                        TreeSyncNode::Parent(_) => {
+                            return Err(TreeSyncFromNodesError::from(
+                                PublicTreeError::MalformedTree,
+                            ))
+                        }
+                    },
+                    None => TreeSyncLeafNode::blank(),
+                };
+                leaf_nodes.push(leaf);
+            } else {
+                let parent = match node_option {
+                    Some(node) => match TreeSyncNode::from(node) {
+                        TreeSyncNode::Parent(p) => *p,
+                        TreeSyncNode::Leaf(_) => {
+                            return Err(TreeSyncFromNodesError::from(
+                                PublicTreeError::MalformedTree,
+                            ))
+                        }
+                    },
+                    None => TreeSyncParentNode::blank(),
+                };
+                parent_nodes.push(parent);
+            }
         }
 
-        let tree = MlsBinaryTree::new(ts_nodes).map_err(|_| PublicTreeError::MalformedTree)?;
+        let tree = MlsBinaryTree::from_components(leaf_nodes, parent_nodes)
+            .map_err(|_| PublicTreeError::MalformedTree)?;
         let mut tree_sync = Self {
             tree,
             tree_hash: vec![],
@@ -543,17 +568,31 @@ impl TreeSync {
     }
 
     /// Returns an iterator over the (non-blank) [`LeafNode`]s in the tree.
-    pub(crate) fn full_leaves(&self) -> impl Iterator<Item = &LeafNode> {
+    pub fn full_leaves(&self) -> impl Iterator<Item = (LeafNodeIndex, &LeafNode)> {
         self.tree
             .leaves()
-            .filter_map(|(_, tsn)| tsn.node().as_ref())
+            .filter_map(|(index, tsn)| tsn.node().as_ref().map(|ln| (index, ln)))
     }
 
     /// Returns an iterator over the (non-blank) [`ParentNode`]s in the tree.
-    pub(crate) fn full_parents(&self) -> impl Iterator<Item = (ParentNodeIndex, &ParentNode)> {
+    pub fn full_parents(&self) -> impl Iterator<Item = (ParentNodeIndex, &ParentNode)> {
         self.tree
             .parents()
             .filter_map(|(index, tsn)| tsn.node().as_ref().map(|pn| (index, pn)))
+    }
+
+    /// Returns an iterator over the [`ParentNodeIndex`]es of blank [`ParentNode`]s in the tree.
+    pub fn blank_parents<'a>(&'a self) -> impl Iterator<Item = ParentNodeIndex> + 'a {
+        self.tree
+            .parents()
+            .filter_map(|(index, tsn)| tsn.node().as_ref().map_or(Some(index), |_| None))
+    }
+
+    /// Returns an iterator over the [`LeafNodeIndex`]es of blank [`LeafNode`]s in the tree.
+    pub fn blank_leaves<'a>(&'a self) -> impl Iterator<Item = LeafNodeIndex> + 'a {
+        self.tree
+            .leaves()
+            .filter_map(|(index, tsn)| tsn.node().as_ref().map_or(Some(index), |_| None))
     }
 
     /// Returns the index of the last full leaf in the tree.
@@ -571,7 +610,7 @@ impl TreeSync {
     ///
     /// XXX: For performance reasons we probably want to have this in a borrowing
     ///      version as well. But it might well go away again.
-    pub(crate) fn full_leave_members(&self) -> impl Iterator<Item = Member> + '_ {
+    pub(crate) fn full_leaf_members(&self) -> impl Iterator<Item = Member> + '_ {
         self.tree
             .leaves()
             // Filter out blank nodes
@@ -605,7 +644,7 @@ impl TreeSync {
 
         // Get the first leaf.
         if let Some(leaf) = leaves.next() {
-            nodes.push(leaf.node().clone().map(Node::LeafNode));
+            nodes.push(leaf.node().clone().map(Node::leaf_node));
         } else {
             // The tree was empty.
             return RatchetTree::trimmed(vec![]);
@@ -630,8 +669,8 @@ impl TreeSync {
 
         // Interleave the leaves and parents.
         for (leaf, parent) in leaves.zip(parents) {
-            nodes.push(parent.node().clone().map(Node::ParentNode));
-            nodes.push(leaf.node().clone().map(Node::LeafNode));
+            nodes.push(parent.node().clone().map(Node::parent_node));
+            nodes.push(leaf.node().clone().map(Node::leaf_node));
         }
 
         RatchetTree::trimmed(nodes)
@@ -747,12 +786,10 @@ mod test {
     }
 
     #[openmls_test::openmls_test]
-    fn test_ratchet_tree_trailing_blank_nodes(
-        ciphersuite: Ciphersuite,
-        provider: &impl OpenMlsProvider,
-    ) {
+    fn test_ratchet_tree_trailing_blank_nodes() {
+        let provider = &Provider::default();
         let (key_package, _, _) = crate::key_packages::tests::key_package(ciphersuite, provider);
-        let node_in = NodeIn::from(Node::LeafNode(LeafNode::from(key_package)));
+        let node_in = NodeIn::from(Node::leaf_node(LeafNode::from(key_package)));
         let tests = [
             (vec![], false),
             (vec![None], false),

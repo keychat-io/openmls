@@ -20,54 +20,58 @@ use crate::{
     framing::{
         mls_auth_content::AuthenticatedContent, mls_content::FramedContentBody, ContentType,
     },
-    group::GroupId,
+    group::{GroupContext, GroupId},
     key_packages::*,
-    prelude::LeafNode,
     schedule::psk::*,
+    treesync::LeafNode,
     versions::ProtocolVersion,
 };
+
+#[cfg(feature = "extensions-draft-08")]
+use crate::component::ComponentId;
 
 /// ## MLS Proposal Types
 ///
 ///
 /// ```c
-/// // draft-ietf-mls-protocol-20
+/// // RFC 9420
 /// // See IANA registry for registered values
 /// uint16 ProposalType;
 /// ```
 ///
 /// | Value           | Name                     | R | Ext | Path | Ref      |
 /// |-----------------|--------------------------|---|-----|------|----------|
-/// | 0x0000          | RESERVED                 | - | -   | -    | RFC XXXX |
-/// | 0x0001          | add                      | Y | Y   | N    | RFC XXXX |
-/// | 0x0002          | update                   | Y | N   | Y    | RFC XXXX |
-/// | 0x0003          | remove                   | Y | Y   | Y    | RFC XXXX |
-/// | 0x0004          | psk                      | Y | Y   | N    | RFC XXXX |
-/// | 0x0005          | reinit                   | Y | Y   | N    | RFC XXXX |
-/// | 0x0006          | external_init            | Y | N   | Y    | RFC XXXX |
-/// | 0x0007          | group_context_extensions | Y | Y   | Y    | RFC XXXX |
-/// | 0x0A0A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x1A1A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x2A2A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x3A3A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x4A4A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x5A5A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x6A6A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x7A7A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x8A8A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0x9A9A          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0xAAAA          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0xBABA          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0xCACA          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0xDADA          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0xEAEA          | GREASE                   | Y | -   | -    | RFC XXXX |
-/// | 0xF000 - 0xFFFF | Reserved for Private Use | - | -   | -    | RFC XXXX |
+/// | 0x0000          | RESERVED                 | - | -   | -    | RFC 9420 |
+/// | 0x0001          | add                      | Y | Y   | N    | RFC 9420 |
+/// | 0x0002          | update                   | Y | N   | Y    | RFC 9420 |
+/// | 0x0003          | remove                   | Y | Y   | Y    | RFC 9420 |
+/// | 0x0004          | psk                      | Y | Y   | N    | RFC 9420 |
+/// | 0x0005          | reinit                   | Y | Y   | N    | RFC 9420 |
+/// | 0x0006          | external_init            | Y | N   | Y    | RFC 9420 |
+/// | 0x0007          | group_context_extensions | Y | Y   | Y    | RFC 9420 |
+/// | 0x0A0A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x1A1A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x2A2A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x3A3A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x4A4A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x5A5A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x6A6A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x7A7A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x8A8A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0x9A9A          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0xAAAA          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0xBABA          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0xCACA          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0xDADA          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0xEAEA          | GREASE                   | Y | -   | -    | RFC 9420 |
+/// | 0xF000 - 0xFFFF | Reserved for Private Use | - | -   | -    | RFC 9420 |
 ///
 /// # Extensions
 ///
-/// | Value  | Name    | Recommended | Path Required | Reference | Notes                        |
-/// |:=======|:========|:============|:==============|:==========|:=============================|
-/// | 0x0008 | app_ack | Y           | Y             | RFC XXXX  | draft-ietf-mls-extensions-00 |
+/// | Value  | Name          | Recommended | Path Required | Reference | Notes                        |
+/// |:=======|:==============|:============|:==============|:==========|:=============================|
+/// | 0x0009 | app_ephemeral | Y           | N             | RFC XXXX  | draft-ietf-mls-extensions-08 |
+/// | 0x000a | self_remove   | Y           | Y             | RFC XXXX  | draft-ietf-mls-extensions-07 |
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Serialize, Deserialize, Hash)]
 #[allow(missing_docs)]
 pub enum ProposalType {
@@ -78,8 +82,12 @@ pub enum ProposalType {
     Reinit,
     ExternalInit,
     GroupContextExtensions,
-    AppAck,
     SelfRemove,
+    #[cfg(feature = "extensions-draft-08")]
+    AppEphemeral,
+    #[cfg(feature = "extensions-draft-08")]
+    AppDataUpdate,
+    Grease(u16),
     Custom(u16),
 }
 
@@ -95,8 +103,18 @@ impl ProposalType {
             | ProposalType::Reinit
             | ProposalType::ExternalInit
             | ProposalType::GroupContextExtensions => true,
-            ProposalType::SelfRemove | ProposalType::AppAck | ProposalType::Custom(_) => false,
+            ProposalType::SelfRemove | ProposalType::Grease(_) | ProposalType::Custom(_) => false,
+            #[cfg(feature = "extensions-draft-08")]
+            ProposalType::AppEphemeral | ProposalType::AppDataUpdate => false,
         }
+    }
+
+    /// Returns true if this is a GREASE proposal type.
+    ///
+    /// GREASE values are used to ensure implementations properly handle unknown
+    /// proposal types. See [RFC 9420 Section 13.5](https://www.rfc-editor.org/rfc/rfc9420.html#section-13.5).
+    pub fn is_grease(&self) -> bool {
+        matches!(self, ProposalType::Grease(_))
     }
 }
 
@@ -162,8 +180,12 @@ impl From<u16> for ProposalType {
             5 => ProposalType::Reinit,
             6 => ProposalType::ExternalInit,
             7 => ProposalType::GroupContextExtensions,
-            8 => ProposalType::AppAck,
-            0x000c => ProposalType::SelfRemove,
+            #[cfg(feature = "extensions-draft-08")]
+            8 => ProposalType::AppDataUpdate,
+            #[cfg(feature = "extensions-draft-08")]
+            0x0009 => ProposalType::AppEphemeral,
+            0x000a => ProposalType::SelfRemove,
+            other if crate::grease::is_grease_value(other) => ProposalType::Grease(other),
             other => ProposalType::Custom(other),
         }
     }
@@ -179,8 +201,12 @@ impl From<ProposalType> for u16 {
             ProposalType::Reinit => 5,
             ProposalType::ExternalInit => 6,
             ProposalType::GroupContextExtensions => 7,
-            ProposalType::AppAck => 8,
-            ProposalType::SelfRemove => 0x000c,
+            #[cfg(feature = "extensions-draft-08")]
+            ProposalType::AppDataUpdate => 8,
+            #[cfg(feature = "extensions-draft-08")]
+            ProposalType::AppEphemeral => 0x0009,
+            ProposalType::SelfRemove => 0x000a,
+            ProposalType::Grease(id) => id,
             ProposalType::Custom(id) => id,
         }
     }
@@ -205,28 +231,69 @@ impl From<ProposalType> for u16 {
 ///     };
 /// } Proposal;
 /// ```
-#[allow(clippy::large_enum_variant)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(missing_docs)]
 #[repr(u16)]
 pub enum Proposal {
-    Add(AddProposal),
-    Update(UpdateProposal),
-    Remove(RemoveProposal),
-    PreSharedKey(PreSharedKeyProposal),
-    ReInit(ReInitProposal),
-    ExternalInit(ExternalInitProposal),
-    GroupContextExtensions(GroupContextExtensionProposal),
+    Add(Box<AddProposal>),
+    Update(Box<UpdateProposal>),
+    Remove(Box<RemoveProposal>),
+    PreSharedKey(Box<PreSharedKeyProposal>),
+    ReInit(Box<ReInitProposal>),
+    ExternalInit(Box<ExternalInitProposal>),
+    GroupContextExtensions(Box<GroupContextExtensionProposal>),
     // # Extensions
-    // TODO(#916): `AppAck` is not in draft-ietf-mls-protocol-17 but
-    //             was moved to `draft-ietf-mls-extensions-00`.
-    AppAck(AppAckProposal),
+    #[cfg(feature = "extensions-draft-08")]
+    AppDataUpdate(Box<AppDataUpdateProposal>),
     // A SelfRemove proposal is an empty struct.
     SelfRemove,
-    Custom(CustomProposal),
+    #[cfg(feature = "extensions-draft-08")]
+    AppEphemeral(Box<AppEphemeralProposal>),
+    Custom(Box<CustomProposal>),
 }
 
 impl Proposal {
+    /// Build a remove proposal.
+    pub(crate) fn remove(r: RemoveProposal) -> Self {
+        Self::Remove(Box::new(r))
+    }
+
+    /// Build an add proposal.
+    pub(crate) fn add(a: AddProposal) -> Self {
+        Self::Add(Box::new(a))
+    }
+
+    /// Build a custom proposal.
+    pub(crate) fn custom(c: CustomProposal) -> Self {
+        Self::Custom(Box::new(c))
+    }
+
+    /// Build a psk proposal.
+    pub(crate) fn psk(p: PreSharedKeyProposal) -> Self {
+        Self::PreSharedKey(Box::new(p))
+    }
+
+    /// Build an update proposal.
+    pub(crate) fn update(p: UpdateProposal) -> Self {
+        Self::Update(Box::new(p))
+    }
+
+    /// Build a GroupContextExtensionProposal proposal.
+    pub(crate) fn group_context_extensions(p: GroupContextExtensionProposal) -> Self {
+        Self::GroupContextExtensions(Box::new(p))
+    }
+
+    /// Build an ExternalInit proposal.
+    pub(crate) fn external_init(p: ExternalInitProposal) -> Self {
+        Self::ExternalInit(Box::new(p))
+    }
+
+    #[cfg(test)]
+    /// Build a ReInit proposal.
+    pub(crate) fn re_init(p: ReInitProposal) -> Self {
+        Self::ReInit(Box::new(p))
+    }
+
     /// Returns the proposal type.
     pub fn proposal_type(&self) -> ProposalType {
         match self {
@@ -237,12 +304,12 @@ impl Proposal {
             Proposal::ReInit(_) => ProposalType::Reinit,
             Proposal::ExternalInit(_) => ProposalType::ExternalInit,
             Proposal::GroupContextExtensions(_) => ProposalType::GroupContextExtensions,
-            Proposal::AppAck(_) => ProposalType::AppAck,
+            #[cfg(feature = "extensions-draft-08")]
+            Proposal::AppDataUpdate(_) => ProposalType::AppDataUpdate,
             Proposal::SelfRemove => ProposalType::SelfRemove,
-            Proposal::Custom(CustomProposal {
-                proposal_type,
-                payload: _,
-            }) => ProposalType::Custom(proposal_type.to_owned()),
+            #[cfg(feature = "extensions-draft-08")]
+            Proposal::AppEphemeral(_) => ProposalType::AppEphemeral,
+            Proposal::Custom(custom) => ProposalType::Custom(custom.proposal_type.to_owned()),
         }
     }
 
@@ -265,12 +332,28 @@ impl Proposal {
             (Proposal::Remove(_), Proposal::Remove(_)) => true,
             // SelfRemoves have the highest priority.
             (_, Proposal::SelfRemove) => true,
-            // All other combinations are invalid
             _ => {
                 debug_assert!(false);
                 false
             }
         }
+    }
+
+    // Get this proposal as a `RemoveProposal`.
+    pub(crate) fn as_remove(&self) -> Option<&RemoveProposal> {
+        if let Self::Remove(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    /// Returns `true` if the proposal is [`Remove`].
+    ///
+    /// [`Remove`]: Proposal::Remove
+    #[must_use]
+    pub fn is_remove(&self) -> bool {
+        matches!(self, Self::Remove(..))
     }
 }
 
@@ -391,7 +474,7 @@ impl PreSharedKeyProposal {
 
 impl PreSharedKeyProposal {
     /// Create a new PSK proposal
-    pub(crate) fn new(psk: PreSharedKeyId) -> Self {
+    pub fn new(psk: PreSharedKeyId) -> Self {
         Self { psk }
     }
 }
@@ -428,7 +511,7 @@ pub struct ReInitProposal {
     pub(crate) group_id: GroupId,
     pub(crate) version: ProtocolVersion,
     pub(crate) ciphersuite: Ciphersuite,
-    pub(crate) extensions: Extensions,
+    pub(crate) extensions: Extensions<GroupContext>,
 }
 
 /// ExternalInit Proposal.
@@ -473,9 +556,8 @@ impl From<Vec<u8>> for ExternalInitProposal {
     }
 }
 
-// TODO: #291 Implement AppAck
-
-/// AppAck Proposal.
+#[cfg(feature = "extensions-draft-08")]
+/// AppAck object.
 ///
 /// This is not yet supported.
 #[derive(
@@ -489,8 +571,48 @@ impl From<Vec<u8>> for ExternalInitProposal {
     TlsSerialize,
     TlsSize,
 )]
-pub struct AppAckProposal {
+pub struct AppAck {
     received_ranges: Vec<MessageRange>,
+}
+
+#[cfg(feature = "extensions-draft-08")]
+/// AppEphemeral proposal.
+#[derive(
+    Debug,
+    PartialEq,
+    Clone,
+    Serialize,
+    Deserialize,
+    TlsDeserialize,
+    TlsDeserializeBytes,
+    TlsSerialize,
+    TlsSize,
+)]
+pub struct AppEphemeralProposal {
+    /// The unique [`ComponentId`] associated with the proposal.
+    component_id: ComponentId,
+    /// Application data.
+    data: VLBytes,
+}
+
+#[cfg(feature = "extensions-draft-08")]
+impl AppEphemeralProposal {
+    /// Create a new [`AppEphemeralProposal`].
+    pub fn new(component_id: ComponentId, data: Vec<u8>) -> Self {
+        Self {
+            component_id,
+            data: data.into(),
+        }
+    }
+    /// Returns the `component_id` contained in the proposal.
+    pub fn component_id(&self) -> ComponentId {
+        self.component_id
+    }
+
+    /// Returns the `data` contained in the proposal.
+    pub fn data(&self) -> &[u8] {
+        self.data.as_slice()
+    }
 }
 
 /// GroupContextExtensions Proposal.
@@ -504,31 +626,37 @@ pub struct AppAckProposal {
 ///   Extension extensions<V>;
 /// } GroupContextExtensions;
 /// ```
-#[derive(
-    Debug,
-    PartialEq,
-    Eq,
-    Clone,
-    Serialize,
-    Deserialize,
-    TlsDeserialize,
-    TlsDeserializeBytes,
-    TlsSerialize,
-    TlsSize,
-)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct GroupContextExtensionProposal {
-    extensions: Extensions,
+    extensions: Extensions<GroupContext>,
+}
+
+impl Size for GroupContextExtensionProposal {
+    fn tls_serialized_len(&self) -> usize {
+        self.extensions.tls_serialized_len()
+    }
+}
+
+impl TlsSerializeTrait for GroupContextExtensionProposal {
+    fn tls_serialize<W: Write>(&self, writer: &mut W) -> Result<usize, Error> {
+        self.extensions.tls_serialize(writer)
+    }
 }
 
 impl GroupContextExtensionProposal {
     /// Create a new [`GroupContextExtensionProposal`].
-    pub(crate) fn new(extensions: Extensions) -> Self {
+    pub(crate) fn new(extensions: Extensions<GroupContext>) -> Self {
         Self { extensions }
     }
 
     /// Get the extensions of the proposal
-    pub fn extensions(&self) -> &Extensions {
+    pub fn extensions(&self) -> &Extensions<GroupContext> {
         &self.extensions
+    }
+
+    /// Consumes the proposal and returns the contained extensions.
+    pub fn into_extensions(self) -> Extensions<GroupContext> {
+        self.extensions
     }
 }
 
@@ -578,11 +706,50 @@ pub enum ProposalOrRefType {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, TlsSerialize, TlsSize)]
 #[repr(u8)]
 #[allow(missing_docs)]
-#[allow(clippy::large_enum_variant)]
-pub(crate) enum ProposalOrRef {
+pub enum ProposalOrRef {
     #[tls_codec(discriminant = 1)]
-    Proposal(Proposal),
-    Reference(ProposalRef),
+    Proposal(Box<Proposal>),
+    Reference(Box<ProposalRef>),
+}
+
+impl ProposalOrRef {
+    /// Create a proposal by value.
+    pub(crate) fn proposal(p: Proposal) -> Self {
+        Self::Proposal(Box::new(p))
+    }
+
+    /// Create a proposal by reference.
+    pub(crate) fn reference(p: ProposalRef) -> Self {
+        Self::Reference(Box::new(p))
+    }
+
+    pub(crate) fn as_proposal(&self) -> Option<&Proposal> {
+        if let Self::Proposal(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn as_reference(&self) -> Option<&ProposalRef> {
+        if let Self::Reference(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+
+impl From<Proposal> for ProposalOrRef {
+    fn from(value: Proposal) -> Self {
+        Self::proposal(value)
+    }
+}
+
+impl From<ProposalRef> for ProposalOrRef {
+    fn from(value: ProposalRef) -> Self {
+        Self::reference(value)
+    }
 }
 
 #[derive(Error, Debug)]
@@ -639,7 +806,6 @@ impl ProposalRef {
     }
 }
 
-/// TODO: #291 Implement AppAck
 /// ```text
 /// struct {
 ///     KeyPackageRef sender;
@@ -663,6 +829,11 @@ pub(crate) struct MessageRange {
     first_generation: u32,
     last_generation: u32,
 }
+
+#[cfg(feature = "extensions-draft-08")]
+mod app_data_update;
+#[cfg(feature = "extensions-draft-08")]
+pub use app_data_update::*;
 
 /// A custom proposal with semantics to be implemented by the application.
 #[derive(
@@ -709,7 +880,8 @@ mod tests {
 
     #[test]
     fn that_unknown_proposal_types_are_de_serialized_correctly() {
-        let proposal_types = [0x0000u16, 0x0A0A, 0x7A7A, 0xF000, 0xFFFF];
+        // Use non-GREASE unknown values for testing (GREASE values have pattern 0x_A_A)
+        let proposal_types = [0x0000u16, 0x0B0B, 0x7C7C, 0xF000, 0xFFFF];
 
         for proposal_type in proposal_types.into_iter() {
             // Construct an unknown proposal type.
@@ -722,7 +894,7 @@ mod tests {
                 ProposalType::Custom(got_proposal_type) => {
                     assert_eq!(proposal_type, got_proposal_type);
                 }
-                other => panic!("Expected `ProposalType::Unknown`, got `{:?}`.", other),
+                other => panic!("Expected `ProposalType::Unknown`, got `{other:?}`."),
             }
 
             // Test serialization.

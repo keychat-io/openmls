@@ -1,6 +1,6 @@
 [package]
 name = "openmls_traits"
-version = "0.3.0"
+version = "0.5.0"
 authors = ["OpenMLS Authors"]
 edition = "2021"
 description = "Traits used by OpenMLS"
@@ -15,6 +15,7 @@ path = "src/traits.rs"
 [features]
 default = []
 test-utils = []
+extensions-draft-08 = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

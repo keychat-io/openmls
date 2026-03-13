@@ -210,6 +210,20 @@ impl Group {
             .map_err(|e| e.into())
     }
 
+    pub fn create_message(
+        &mut self,
+        provider: &Provider,
+        sender: &Identity,
+        msg: &[u8],
+    ) -> Result<Vec<u8>, JsError> {
+        let msg_out = &self
+            .mls_group
+            .create_message(provider.as_ref(), &sender.keypair, msg)?;
+        let mut serialized = vec![];
+        msg_out.tls_serialize(&mut serialized)?;
+        Ok(serialized)
+    }
+
     pub fn process_message(
         &mut self,
         provider: &mut Provider,
@@ -234,8 +248,10 @@ impl Group {
             openmls::framing::ProcessedMessageContent::ApplicationMessage(app_msg) => {
                 Ok(app_msg.into_bytes())
             }
-            openmls::framing::ProcessedMessageContent::ProposalMessage(_)
-            | openmls::framing::ProcessedMessageContent::ExternalJoinProposalMessage(_) => {
+            openmls::framing::ProcessedMessageContent::ProposalMessage(proposal)
+            | openmls::framing::ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
+                self.mls_group
+                    .store_pending_proposal(provider.0.storage(), *proposal)?;
                 Ok(vec![])
             }
             openmls::framing::ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
@@ -254,7 +270,7 @@ impl Group {
         key_length: usize,
     ) -> Result<Vec<u8>, JsError> {
         self.mls_group
-            .export_secret(provider.as_ref(), label, context, key_length)
+            .export_secret(provider.as_ref().crypto(), label, context, key_length)
             .map_err(|e| {
                 println!("export key error: {e}");
                 e.into()
@@ -327,7 +343,49 @@ impl std::error::Error for NoWelcomeError {}
 pub struct KeyPackage(OpenMlsKeyPackage);
 
 #[wasm_bindgen]
+impl KeyPackage {
+    /// Serialize this KeyPackage to bytes
+    #[wasm_bindgen]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.tls_serialize_detached().unwrap()
+    }
+
+    /// Deserialize a KeyPackage from bytes
+    #[wasm_bindgen]
+    pub fn from_bytes(bytes: &[u8]) -> Result<KeyPackage, JsError> {
+        let mut s = bytes;
+        let kp_in = openmls::key_packages::KeyPackageIn::tls_deserialize(&mut s)
+            .map_err(|e| JsError::new(&format!("KeyPackage deserialization error: {e}")))?;
+        let kp = kp_in
+            .validate(
+                &openmls_rust_crypto::RustCrypto::default(),
+                openmls::prelude::ProtocolVersion::Mls10,
+            )
+            .map_err(|e| JsError::new(&format!("KeyPackage validation error: {e}")))?;
+        Ok(KeyPackage(kp))
+    }
+}
+
+#[wasm_bindgen]
 pub struct RatchetTree(RatchetTreeIn);
+
+#[wasm_bindgen]
+impl RatchetTree {
+    /// Serialize this RatchetTree to bytes
+    #[wasm_bindgen]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.tls_serialize_detached().unwrap()
+    }
+
+    /// Deserialize a RatchetTree from bytes
+    #[wasm_bindgen]
+    pub fn from_bytes(bytes: &[u8]) -> Result<RatchetTree, JsError> {
+        let mut s = bytes;
+        let tree = RatchetTreeIn::tls_deserialize(&mut s)
+            .map_err(|e| JsError::new(&format!("RatchetTree deserialization error: {e}")))?;
+        Ok(RatchetTree(tree))
+    }
+}
 
 fn mls_message_to_uint8array(msg: &MlsMessageOut) -> Uint8Array {
     // see https://github.com/rustwasm/wasm-bindgen/issues/1619#issuecomment-505065294
@@ -356,8 +414,7 @@ mod tests {
         v.as_string().unwrap()
     }
 
-    #[test]
-    fn basic() {
+    fn create_group_alice_and_bob() -> (Provider, Identity, Group, Provider, Identity, Group) {
         let mut alice_provider = Provider::new();
         let bob_provider = Provider::new();
 
@@ -386,6 +443,21 @@ mod tests {
 
         let chess_club_bob = Group::native_join(&bob_provider, &add_msgs.welcome, ratchet_tree);
 
+        (
+            alice_provider,
+            alice,
+            chess_club_alice,
+            bob_provider,
+            bob,
+            chess_club_bob,
+        )
+    }
+
+    #[test]
+    fn basic() {
+        let (alice_provider, _, chess_club_alice, bob_provider, _, chess_club_bob) =
+            create_group_alice_and_bob();
+
         let bob_exported_key = chess_club_bob
             .export_key(&bob_provider, "chess_key", &[0x30], 32)
             .map_err(js_error_to_string)
@@ -395,6 +467,25 @@ mod tests {
             .map_err(js_error_to_string)
             .unwrap();
 
-        assert_eq!(bob_exported_key, alice_exported_key)
+        assert_eq!(bob_exported_key, alice_exported_key);
+    }
+
+    #[test]
+    fn create_message() {
+        let (alice_provider, alice, mut chess_club_alice, mut bob_provider, _, mut chess_club_bob) =
+            create_group_alice_and_bob();
+
+        let alice_msg = "hello, bob!".as_bytes();
+        let msg_out = chess_club_alice
+            .create_message(&alice_provider, &alice, alice_msg)
+            .map_err(js_error_to_string)
+            .unwrap();
+
+        let bob_msg = chess_club_bob
+            .process_message(&mut bob_provider, &msg_out)
+            .map_err(js_error_to_string)
+            .unwrap();
+
+        assert_eq!(alice_msg, bob_msg);
     }
 }

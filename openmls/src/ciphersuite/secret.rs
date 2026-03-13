@@ -37,14 +37,6 @@ impl Default for Secret {
 impl PartialEq for Secret {
     // Constant time comparison.
     fn eq(&self, other: &Secret) -> bool {
-        // These values can be considered public and checked before the actual
-        // comparison.
-        if self.value.as_slice().len() != other.value.as_slice().len() {
-            log::error!("Incompatible secrets");
-            log::trace!("  {}", self.value.as_slice().len());
-            log::trace!("  {}", other.value.as_slice().len());
-            return false;
-        }
         equal_ct(self.value.as_slice(), other.value.as_slice())
     }
 }
@@ -101,6 +93,27 @@ impl Secret {
         })
     }
 
+    pub(crate) fn hmac<'a>(
+        &self,
+        crypto: &impl OpenMlsCrypto,
+        ciphersuite: Ciphersuite,
+        message: impl Into<&'a Secret>,
+    ) -> Result<Self, CryptoError> {
+        log::trace!("HMAC with");
+        log_crypto!(trace, "  salt: {:x?}", self.value);
+
+        let message_tbh = message.into();
+        log_crypto!(trace, "  message:  {:x?}", message_tbh.value);
+
+        Ok(Self {
+            value: crypto.hmac(
+                ciphersuite.hash_algorithm(),
+                self.value.as_slice(),
+                message_tbh.as_slice(),
+            )?,
+        })
+    }
+
     /// HKDF expand where `self` is `prk`.
     pub(crate) fn hkdf_expand(
         &self,
@@ -133,7 +146,7 @@ impl Secret {
         context: &[u8],
         length: usize,
     ) -> Result<Secret, CryptoError> {
-        let full_label = format!("MLS 1.0 {}", label);
+        let full_label = format!("MLS 1.0 {label}");
         log::trace!(
             "KDF expand with label \"{}\" and {:?} with context {:x?}",
             &full_label,
@@ -141,7 +154,7 @@ impl Secret {
             context
         );
         let info = KdfLabel::serialized_label(context, full_label, length)?;
-        log::trace!("  serialized info: {:x?}", info);
+        log::trace!("  serialized info: {info:x?}");
         log_crypto!(trace, "  secret: {:x?}", self.value);
         self.hkdf_expand(crypto, ciphersuite, &info, length)
     }

@@ -1,3 +1,5 @@
+use std::slice::from_ref;
+
 use openmls::{
     prelude::{test_utils::new_credential, *},
     storage::OpenMlsProvider,
@@ -9,7 +11,7 @@ use openmls_traits::signatures::Signer;
 
 fn generate_key_package<Provider: OpenMlsProvider>(
     ciphersuite: Ciphersuite,
-    extensions: Extensions,
+    extensions: Extensions<KeyPackage>,
     provider: &Provider,
     credential_with_key: CredentialWithKey,
     signer: &impl Signer,
@@ -247,7 +249,7 @@ fn mls_duplicate_signature_key_detection_different_key_package() {
         let welcome = match alice_group.add_members(
             alice_provider,
             &alice_signer,
-            &[bob_key_package.clone()],
+            from_ref(&bob_key_package),
         ) {
             Ok((_, welcome, _)) => welcome,
             Err(e) => panic!("Could not add member to group: {e:?}"),
@@ -550,9 +552,11 @@ fn mls_group_operations() {
         // Check that both groups have the same state
         assert_eq!(
             alice_group
-                .export_secret(alice_provider, "", &[], 32)
+                .export_secret(alice_provider.crypto(), "", &[], 32)
                 .unwrap(),
-            bob_group.export_secret(bob_provider, "", &[], 32).unwrap()
+            bob_group
+                .export_secret(bob_provider.crypto(), "", &[], 32)
+                .unwrap()
         );
 
         // Make sure that both groups have the same public tree
@@ -639,9 +643,11 @@ fn mls_group_operations() {
         // Check that both groups have the same state
         assert_eq!(
             alice_group
-                .export_secret(alice_provider, "", &[], 32)
+                .export_secret(alice_provider.crypto(), "", &[], 32)
                 .unwrap(),
-            bob_group.export_secret(bob_provider, "", &[], 32).unwrap()
+            bob_group
+                .export_secret(bob_provider.crypto(), "", &[], 32)
+                .unwrap()
         );
 
         // Make sure that both groups have the same public tree
@@ -806,16 +812,18 @@ fn mls_group_operations() {
         // Check that all groups have the same state
         assert_eq!(
             alice_group
-                .export_secret(alice_provider, "", &[], 32)
+                .export_secret(alice_provider.crypto(), "", &[], 32)
                 .unwrap(),
-            bob_group.export_secret(bob_provider, "", &[], 32).unwrap()
+            bob_group
+                .export_secret(bob_provider.crypto(), "", &[], 32)
+                .unwrap()
         );
         assert_eq!(
             alice_group
-                .export_secret(alice_provider, "", &[], 32)
+                .export_secret(alice_provider.crypto(), "", &[], 32)
                 .unwrap(),
             charlie_group
-                .export_secret(charlie_provider, "", &[], 32)
+                .export_secret(charlie_provider.crypto(), "", &[], 32)
                 .unwrap()
         );
 
@@ -1080,6 +1088,7 @@ fn mls_group_operations() {
             .expect("expected the message to be a welcome message");
 
         // Bob creates a new group
+        bob_group.delete(bob_provider.storage()).unwrap();
         let mut bob_group = StagedWelcome::new_from_welcome(
             bob_provider,
             mls_group_create_config.join_config(),
@@ -1279,6 +1288,8 @@ fn mls_group_operations() {
             .into_welcome()
             .expect("expected the message to be a welcome message");
 
+        // Delete Bob's old group before loading the new state
+        bob_group.delete(bob_provider.storage()).unwrap();
         let mut bob_group = StagedWelcome::new_from_welcome(
             bob_provider,
             mls_group_create_config.join_config(),
@@ -1291,10 +1302,10 @@ fn mls_group_operations() {
 
         assert_eq!(
             alice_group
-                .export_secret(alice_provider, "before load", &[], 32)
+                .export_secret(alice_provider.crypto(), "before load", &[], 32)
                 .unwrap(),
             bob_group
-                .export_secret(bob_provider, "before load", &[], 32)
+                .export_secret(bob_provider.crypto(), "before load", &[], 32)
                 .unwrap()
         );
 
@@ -1305,10 +1316,10 @@ fn mls_group_operations() {
         // Make sure the state is still the same
         assert_eq!(
             alice_group
-                .export_secret(alice_provider, "after load", &[], 32)
+                .export_secret(alice_provider.crypto(), "after load", &[], 32)
                 .unwrap(),
             bob_group
-                .export_secret(bob_provider, "after load", &[], 32)
+                .export_secret(bob_provider.crypto(), "after load", &[], 32)
                 .unwrap()
         );
     }
@@ -1316,30 +1327,37 @@ fn mls_group_operations() {
 
 #[openmls_test]
 fn addition_order() {
+    let alice_provider = &Provider::default();
+    let bob_provider = &Provider::default();
+    let charlie_provider = &Provider::default();
+
     for wire_format_policy in WIRE_FORMAT_POLICIES.iter() {
-        let group_id = GroupId::random(provider.rand());
+        let group_id = GroupId::random(alice_provider.rand());
         // Generate credentials with keys
         let (alice_credential, alice_signer) =
-            new_credential(provider, b"Alice", ciphersuite.signature_algorithm());
+            new_credential(alice_provider, b"Alice", ciphersuite.signature_algorithm());
 
         let (bob_credential, bob_signer) =
-            new_credential(provider, b"Bob", ciphersuite.signature_algorithm());
+            new_credential(bob_provider, b"Bob", ciphersuite.signature_algorithm());
 
-        let (charlie_credential, charlie_signer) =
-            new_credential(provider, b"Charlie", ciphersuite.signature_algorithm());
+        let (charlie_credential, charlie_signer) = new_credential(
+            charlie_provider,
+            b"Charlie",
+            ciphersuite.signature_algorithm(),
+        );
 
         // Generate KeyPackages
         let bob_key_package = generate_key_package(
             ciphersuite,
             Extensions::empty(),
-            provider,
+            bob_provider,
             bob_credential.clone(),
             &bob_signer,
         );
         let charlie_key_package = generate_key_package(
             ciphersuite,
             Extensions::empty(),
-            provider,
+            charlie_provider,
             charlie_credential.clone(),
             &charlie_signer,
         );
@@ -1353,7 +1371,7 @@ fn addition_order() {
 
         // === Alice creates a group ===
         let mut alice_group = MlsGroup::new_with_group_id(
-            provider,
+            alice_provider,
             &alice_signer,
             &mls_group_config,
             group_id.clone(),
@@ -1363,7 +1381,7 @@ fn addition_order() {
 
         // === Alice adds Bob ===
         let _welcome = match alice_group.add_members(
-            provider,
+            alice_provider,
             &alice_signer,
             &[bob_key_package, charlie_key_package],
         ) {
@@ -1399,7 +1417,7 @@ fn addition_order() {
         }
 
         alice_group
-            .merge_pending_commit(provider)
+            .merge_pending_commit(alice_provider)
             .expect("error merging pending commit");
 
         // Check that the members got added in the same order as the KeyPackages
@@ -1415,23 +1433,142 @@ fn addition_order() {
     }
 }
 
+/// This test demonstrates commit creation with M remove proposals and K add proposals,
+/// starting from a group size of N.
+///
+///  - Alice creates a group
+///  - Alice fills up the group to a size of N.
+///  - Alice proposes to remove M members.
+///  - Alice adds K members.
 #[openmls_test]
-fn test_empty_input_errors(
-    ciphersuite: Ciphersuite,
-    provider: &impl crate::storage::OpenMlsProvider,
-) {
+fn more_remove_than_add_proposals_in_commit() {
+    let provider = &Provider::default();
+
+    // choose group size, remove proposal count and add proposal count, s.t. M > K, and M and K each
+    // pass a tree shrink/grow threshold, i.e., a power of 2.
+    more_remove_than_add_proposals_in_commit_inner::<6, 2, 1>(provider, ciphersuite);
+    more_remove_than_add_proposals_in_commit_inner::<10, 2, 1>(provider, ciphersuite);
+    more_remove_than_add_proposals_in_commit_inner::<22, 6, 5>(provider, ciphersuite);
+
+    fn more_remove_than_add_proposals_in_commit_inner<
+        const INITIAL_GROUP_SIZE: usize,
+        const REMOVE_PROPOSALS_COUNT: usize,
+        const ADD_PROPOSALS_COUNT: usize,
+    >(
+        provider: &Provider,
+        ciphersuite: Ciphersuite,
+    ) {
+        for wire_format_policy in WIRE_FORMAT_POLICIES.iter() {
+            let ALL_MEMBERS_COUNT: usize = INITIAL_GROUP_SIZE + ADD_PROPOSALS_COUNT;
+            let REMAINING_MEMBERS_COUNT: usize = INITIAL_GROUP_SIZE - REMOVE_PROPOSALS_COUNT;
+
+            let ids = (0..ALL_MEMBERS_COUNT)
+                .map(|i| format!("member {i}").into_bytes())
+                .collect::<Vec<_>>();
+
+            // Generate credentials with keys
+            let (credentials, signers): (Vec<_>, Vec<_>) = ids
+                .iter()
+                .map(|id| new_credential(provider, id, ciphersuite.signature_algorithm()))
+                .unzip();
+
+            // Define the MlsGroup configuration
+            let mls_group_create_config = MlsGroupCreateConfig::builder()
+                .wire_format_policy(*wire_format_policy)
+                .ciphersuite(ciphersuite)
+                .build();
+
+            let group_id = GroupId::random(provider.rand());
+
+            // === Alice creates a group ===
+            let mut alice_group = MlsGroup::new_with_group_id(
+                provider,
+                &signers[0],
+                &mls_group_create_config,
+                group_id.clone(),
+                credentials[0].clone(),
+            )
+            .expect("could not create group");
+
+            // Key packages for eveeryone except alice
+            let key_packages = credentials[1..]
+                .iter()
+                .zip(signers[1..].iter())
+                .map(|(credential, signer)| {
+                    generate_key_package(
+                        ciphersuite,
+                        Extensions::empty(),
+                        provider,
+                        credential.clone(),
+                        signer,
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            // === Alice adds everyone except the members to add later... ===
+            alice_group
+                .add_members(
+                    provider,
+                    &signers[0],
+                    // -1 because alice is already in the group
+                    &key_packages[..INITIAL_GROUP_SIZE - 1],
+                )
+                .expect("Could not add initial members to group");
+
+            alice_group
+                .merge_pending_commit(provider)
+                .expect("error merging pending commit");
+
+            // Setup finished, we have reached the initial group size
+            assert_eq!(alice_group.members().count(), INITIAL_GROUP_SIZE);
+
+            // Alice removes members, these removals alone _would_ cause the tree to shrink
+            let removed_indices = (REMAINING_MEMBERS_COUNT..INITIAL_GROUP_SIZE)
+                .map(|index| LeafNodeIndex::new(index as u32));
+
+            for index in removed_indices {
+                alice_group
+                    .propose_remove_member_by_value(provider, &signers[0], index)
+                    .expect("could not propose removing member");
+            }
+
+            // Alice adds members. Fewer than previously removed, but enough to get the tree back to its original size
+            alice_group
+                .add_members(
+                    provider,
+                    &signers[0],
+                    &key_packages[INITIAL_GROUP_SIZE - 1..],
+                )
+                .expect("Could not add member to group");
+
+            alice_group
+                .merge_pending_commit(provider)
+                .expect("error merging pending commit");
+
+            // Check that the group now has the expected member count
+            assert_eq!(
+                alice_group.members().count(),
+                ALL_MEMBERS_COUNT - REMOVE_PROPOSALS_COUNT
+            );
+        }
+    }
+}
+
+#[openmls_test]
+fn test_empty_input_errors() {
+    let alice_provider = &Provider::default();
     let group_id = GroupId::from_slice(b"Test Group");
 
     // Generate credentials with keys
     let (alice_credential, alice_signer) =
-        new_credential(provider, b"Alice", ciphersuite.signature_algorithm());
+        new_credential(alice_provider, b"Alice", ciphersuite.signature_algorithm());
 
     // Define the MlsGroupCreateConfig
     let mls_group_create_config = MlsGroupCreateConfig::test_default(ciphersuite);
 
     // === Alice creates a group ===
     let mut alice_group = MlsGroup::new_with_group_id(
-        provider,
+        alice_provider,
         &alice_signer,
         &mls_group_create_config,
         group_id,
@@ -1441,13 +1578,13 @@ fn test_empty_input_errors(
 
     assert!(matches!(
         alice_group
-            .add_members(provider, &alice_signer, &[])
+            .add_members(alice_provider, &alice_signer, &[])
             .expect_err("No EmptyInputError when trying to pass an empty slice to `add_members`."),
         AddMembersError::EmptyInput(EmptyInputError::AddMembers)
     ));
     assert!(matches!(
         alice_group
-            .remove_members(provider, &alice_signer, &[])
+            .remove_members(alice_provider, &alice_signer, &[])
             .expect_err(
                 "No EmptyInputError when trying to pass an empty slice to `remove_members`."
             ),
@@ -1457,25 +1594,25 @@ fn test_empty_input_errors(
 
 // This tests the ratchet tree extension usage flag in the configuration
 #[openmls_test]
-fn mls_group_ratchet_tree_extension(
-    ciphersuite: Ciphersuite,
-    provider: &impl crate::storage::OpenMlsProvider,
-) {
+fn mls_group_ratchet_tree_extension() {
     for wire_format_policy in WIRE_FORMAT_POLICIES.iter() {
         // === Positive case: using the ratchet tree extension ===
 
+        let alice_provider = &Provider::default();
+        let bob_provider = &Provider::default();
+
         // Generate credentials
         let (alice_credential, alice_signer) =
-            new_credential(provider, b"Alice", ciphersuite.signature_algorithm());
+            new_credential(alice_provider, b"Alice", ciphersuite.signature_algorithm());
 
         let (bob_credential, bob_signer) =
-            new_credential(provider, b"Bob", ciphersuite.signature_algorithm());
+            new_credential(bob_provider, b"Bob", ciphersuite.signature_algorithm());
 
         // Generate KeyPackages
         let bob_key_package = generate_key_package(
             ciphersuite,
             Extensions::empty(),
-            provider,
+            bob_provider,
             bob_credential,
             &bob_signer,
         );
@@ -1487,9 +1624,9 @@ fn mls_group_ratchet_tree_extension(
             .build();
 
         // === Alice creates a group ===
-        let group_id = GroupId::random(provider.rand());
+        let group_id = GroupId::random(alice_provider.rand());
         let mut alice_group = MlsGroup::new_with_group_id(
-            provider,
+            alice_provider,
             &alice_signer,
             &mls_group_create_config,
             group_id,
@@ -1499,7 +1636,7 @@ fn mls_group_ratchet_tree_extension(
 
         // === Alice adds Bob ===
         let (_queued_message, welcome, _group_info) = alice_group
-            .add_members(provider, &alice_signer, &[bob_key_package.clone()])
+            .add_members(alice_provider, &alice_signer, from_ref(&bob_key_package))
             .unwrap();
 
         let welcome: MlsMessageIn = welcome.into();
@@ -1509,29 +1646,29 @@ fn mls_group_ratchet_tree_extension(
 
         // === Bob joins using the ratchet tree extension ===
         let _bob_group = StagedWelcome::new_from_welcome(
-            provider,
+            bob_provider,
             mls_group_create_config.join_config(),
             welcome,
             None,
         )
         .expect("Error creating staged join from Welcome")
-        .into_group(provider)
+        .into_group(bob_provider)
         .expect("Error creating group from staged join");
 
         // === Negative case: not using the ratchet tree extension ===
 
         // Generate credentials with keys
         let (alice_credential, alice_signer) =
-            new_credential(provider, b"Alice", ciphersuite.signature_algorithm());
+            new_credential(alice_provider, b"Alice", ciphersuite.signature_algorithm());
 
         let (bob_credential, bob_signer) =
-            new_credential(provider, b"Bob", ciphersuite.signature_algorithm());
+            new_credential(bob_provider, b"Bob", ciphersuite.signature_algorithm());
 
         // Generate KeyPackages
         let bob_key_package = generate_key_package(
             ciphersuite,
             Extensions::empty(),
-            provider,
+            bob_provider,
             bob_credential,
             &bob_signer,
         );
@@ -1539,9 +1676,9 @@ fn mls_group_ratchet_tree_extension(
         let mls_group_create_config = MlsGroupCreateConfig::test_default(ciphersuite);
 
         // === Alice creates a group ===
-        let group_id = GroupId::random(provider.rand());
+        let group_id = GroupId::random(alice_provider.rand());
         let mut alice_group = MlsGroup::new_with_group_id(
-            provider,
+            alice_provider,
             &alice_signer,
             &mls_group_create_config,
             group_id,
@@ -1551,7 +1688,7 @@ fn mls_group_ratchet_tree_extension(
 
         // === Alice adds Bob ===
         let (_queued_message, welcome, _group_info) = alice_group
-            .add_members(provider, &alice_signer, &[bob_key_package])
+            .add_members(alice_provider, &alice_signer, &[bob_key_package])
             .unwrap();
 
         let welcome: MlsMessageIn = welcome.into();
@@ -1561,7 +1698,7 @@ fn mls_group_ratchet_tree_extension(
 
         // === Bob tries to join without the ratchet tree extension ===
         let error = StagedWelcome::new_from_welcome(
-            provider,
+            bob_provider,
             mls_group_create_config.join_config(),
             welcome,
             None,
@@ -1574,17 +1711,16 @@ fn mls_group_ratchet_tree_extension(
 
 /// Test that the a group context extensions proposal is correctly applied when valid, and rejected when not.
 #[openmls_test]
-fn group_context_extensions_proposal(
-    ciphersuite: Ciphersuite,
-    provider: &impl crate::storage::OpenMlsProvider,
-) {
+fn group_context_extensions_proposal() {
+    let alice_provider = &Provider::default();
+
     let (alice_credential_with_key, alice_signer) =
-        new_credential(provider, b"Alice", ciphersuite.signature_algorithm());
+        new_credential(alice_provider, b"Alice", ciphersuite.signature_algorithm());
 
     // === Alice creates a group ===
     let mut alice_group = MlsGroup::builder()
         .ciphersuite(ciphersuite)
-        .build(provider, &alice_signer, alice_credential_with_key)
+        .build(alice_provider, &alice_signer, alice_credential_with_key)
         .expect("error creating group using builder");
 
     // No required capabilities, so no specifically required extensions.
@@ -1596,20 +1732,22 @@ fn group_context_extensions_proposal(
 
     let new_extensions = Extensions::single(Extension::RequiredCapabilities(
         RequiredCapabilitiesExtension::new(&[ExtensionType::RequiredCapabilities], &[], &[]),
-    ));
+    ))
+    .expect("failed to create single-element extensions list");
 
     let new_extensions_2 = Extensions::single(Extension::RequiredCapabilities(
         RequiredCapabilitiesExtension::new(&[ExtensionType::RatchetTree], &[], &[]),
-    ));
+    ))
+    .expect("failed to create single-element extensions list");
 
     alice_group
-        .propose_group_context_extensions(provider, new_extensions.clone(), &alice_signer)
+        .propose_group_context_extensions(alice_provider, new_extensions.clone(), &alice_signer)
         .expect("failed to build group context extensions proposal");
 
     assert_eq!(alice_group.pending_proposals().count(), 1);
 
     alice_group
-        .commit_to_pending_proposals(provider, &alice_signer)
+        .commit_to_pending_proposals(alice_provider, &alice_signer)
         .expect("failed to commit to pending proposals");
 
     // The staged commit has the new group context extensions.
@@ -1621,7 +1759,7 @@ fn group_context_extensions_proposal(
     assert_eq!(group_context_staged.extensions(), &new_extensions);
 
     alice_group
-        .merge_pending_commit(provider)
+        .merge_pending_commit(alice_provider)
         .expect("error merging pending commit");
 
     let required_capabilities = alice_group
@@ -1635,18 +1773,18 @@ fn group_context_extensions_proposal(
     // === committing to two group context extensions should fail
 
     alice_group
-        .propose_group_context_extensions(provider, new_extensions, &alice_signer)
+        .propose_group_context_extensions(alice_provider, new_extensions, &alice_signer)
         .expect("failed to build group context extensions proposal");
 
     // the proposals need to be different or they will be deduplicated
     alice_group
-        .propose_group_context_extensions(provider, new_extensions_2, &alice_signer)
+        .propose_group_context_extensions(alice_provider, new_extensions_2, &alice_signer)
         .expect("failed to build group context extensions proposal");
 
     assert_eq!(alice_group.pending_proposals().count(), 2);
 
     alice_group
-        .commit_to_pending_proposals(provider, &alice_signer)
+        .commit_to_pending_proposals(alice_provider, &alice_signer)
         .expect_err(
             "expected error when committing to multiple group context extensions proposals",
         );
@@ -1657,10 +1795,11 @@ fn group_context_extensions_proposal(
     // contains unsupported extension
     let new_extensions = Extensions::single(Extension::RequiredCapabilities(
         RequiredCapabilitiesExtension::new(&[ExtensionType::Unknown(0xf042)], &[], &[]),
-    ));
+    ))
+    .expect("failed to create single-element extensions list");
 
     alice_group
-        .propose_group_context_extensions(provider, new_extensions, &alice_signer)
+        .propose_group_context_extensions(alice_provider, new_extensions, &alice_signer)
         .expect_err("expected an error building GCE proposal with bad required_capabilities");
 
     // TODO: we need to test that processing a commit with multiple group context extensions

@@ -56,7 +56,11 @@ impl DerefMut for FrankenKeyPackage {
 }
 
 impl SignedStruct<FrankenKeyPackageTbs> for FrankenKeyPackage {
-    fn from_payload(payload: FrankenKeyPackageTbs, signature: Signature) -> Self {
+    fn from_payload(
+        payload: FrankenKeyPackageTbs,
+        signature: Signature,
+        _serialized_payload: Vec<u8>,
+    ) -> Self {
         Self {
             payload,
             signature: signature.as_slice().to_owned().into(),
@@ -134,6 +138,8 @@ pub struct FrankenLifetime {
 
 #[openmls_test]
 fn test_franken_key_package() {
+    let provider = &Provider::default();
+
     let config = ciphersuite;
 
     let (credential, signer) = {

@@ -26,6 +26,8 @@ use rand::{RngCore, SeedableRng};
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use tls_codec::SecretVLBytes;
 
+use crate::hmac;
+
 #[derive(Debug)]
 pub struct RustCrypto {
     rng: RwLock<rand_chacha::ChaCha20Rng>,
@@ -56,8 +58,8 @@ fn kem_mode(kem: HpkeKemType) -> hpke_types::KemAlgorithm {
         HpkeKemType::DhKemP521 => hpke_types::KemAlgorithm::DhKemP521,
         HpkeKemType::DhKem25519 => hpke_types::KemAlgorithm::DhKem25519,
         HpkeKemType::DhKem448 => hpke_types::KemAlgorithm::DhKem448,
-        HpkeKemType::XWingKemDraft2 => {
-            unimplemented!("XWingKemDraft1 is not supported by the RustCrypto provider.")
+        HpkeKemType::XWingKemDraft6 => {
+            unimplemented!("XWingKemDraft6 is not supported by the RustCrypto provider.")
         }
     }
 }
@@ -105,11 +107,21 @@ impl OpenMlsCrypto for RustCrypto {
         salt: &[u8],
         ikm: &[u8],
     ) -> Result<SecretVLBytes, openmls_traits::types::CryptoError> {
+        #[allow(deprecated)]
         match hash_type {
             HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_384 => Ok(Hkdf::<Sha384>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_512 => Ok(Hkdf::<Sha512>::extract(Some(salt), ikm).0.as_slice().into()),
         }
+    }
+
+    fn hmac(
+        &self,
+        hash_type: HashType,
+        key: &[u8],
+        message: &[u8],
+    ) -> Result<SecretVLBytes, CryptoError> {
+        hmac::hmac(hash_type, key, message)
     }
 
     fn hkdf_expand(
@@ -152,6 +164,7 @@ impl OpenMlsCrypto for RustCrypto {
         hash_type: openmls_traits::types::HashType,
         data: &[u8],
     ) -> Result<Vec<u8>, openmls_traits::types::CryptoError> {
+        #[allow(deprecated)]
         match hash_type {
             HashType::Sha2_256 => Ok(Sha256::digest(data).as_slice().into()),
             HashType::Sha2_384 => Ok(Sha384::digest(data).as_slice().into()),
@@ -239,6 +252,7 @@ impl OpenMlsCrypto for RustCrypto {
                     .map_err(|_| CryptoError::InsufficientRandomness)?;
                 let k = SigningKey::random(&mut *rng);
                 let pk = k.verifying_key().to_encoded_point(false).as_bytes().into();
+                #[allow(deprecated)]
                 Ok((k.to_bytes().as_slice().into(), pk))
             }
             SignatureScheme::ED25519 => {

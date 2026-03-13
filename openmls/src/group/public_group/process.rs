@@ -6,18 +6,22 @@ use tls_codec::Serialize;
 
 use crate::{
     ciphersuite::OpenMlsSignaturePublicKey,
-    credentials::CredentialWithKey,
+    credentials::{Credential, CredentialWithKey},
     error::LibraryError,
     framing::{
-        mls_content::FramedContentBody, ApplicationMessage, DecryptedMessage, ProcessedMessage,
-        ProcessedMessageContent, ProtocolMessage, Sender, SenderContext, UnverifiedMessage,
+        mls_auth_content::AuthenticatedContent, mls_content::FramedContentBody, ApplicationMessage,
+        DecryptedMessage, ProcessedMessage, ProcessedMessageContent, ProtocolMessage, Sender,
+        SenderContext, UnverifiedMessage,
     },
     group::{
-        errors::ValidationError, mls_group::errors::ProcessMessageError,
-        past_secrets::MessageSecretsStore, proposal_store::QueuedProposal,
+        errors::ValidationError, past_secrets::MessageSecretsStore, proposal_store::QueuedProposal,
+        PublicProcessMessageError,
     },
     messages::proposals::Proposal,
 };
+
+#[cfg(feature = "extensions-draft-08")]
+use crate::prelude::processing::AppDataUpdates;
 
 use super::PublicGroup;
 
@@ -61,10 +65,13 @@ impl PublicGroup {
                     .leaf(leaf_node_index)
                     .map(CredentialWithKey::from)
             } else if let Some(store) = message_secrets_store_option {
+                // The message is from a past epoch, look up the member in the
+                // past secrets store based on the epoch and sender's leaf
+                // index.
                 store
                     .leaves_for_epoch(message_epoch)
-                    .get(leaf_node_index.u32() as usize)
-                    .map(CredentialWithKey::from)
+                    .get(&leaf_node_index)
+                    .map(|&member| CredentialWithKey::from(member))
             } else {
                 None
             }
@@ -96,10 +103,11 @@ impl PublicGroup {
                 self.group_id().clone(),
                 *leaf_index,
             ))),
-            Sender::NewMemberCommit => Some(SenderContext::ExternalCommit((
-                self.group_id().clone(),
-                self.treesync().free_leaf_index(),
-            ))),
+            Sender::NewMemberCommit => Some(SenderContext::ExternalCommit {
+                group_id: self.group_id().clone(),
+                leftmost_blank_index: self.treesync().free_leaf_index(),
+                self_removes_in_store: self.proposal_store.self_removes(),
+            }),
             Sender::External(_) | Sender::NewMemberProposal => None,
         };
 
@@ -137,7 +145,7 @@ impl PublicGroup {
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241
@@ -149,7 +157,7 @@ impl PublicGroup {
         &self,
         crypto: &impl OpenMlsCrypto,
         message: impl Into<ProtocolMessage>,
-    ) -> Result<ProcessedMessage, ProcessMessageError> {
+    ) -> Result<ProcessedMessage, PublicProcessMessageError> {
         let protocol_message = message.into();
         // Checks the following semantic validation:
         //  - ValSem002
@@ -158,7 +166,7 @@ impl PublicGroup {
 
         let decrypted_message = match protocol_message {
             ProtocolMessage::PrivateMessage(_) => {
-                return Err(ProcessMessageError::IncompatibleWireFormat)
+                return Err(PublicProcessMessageError::IncompatibleWireFormat)
             }
             ProtocolMessage::PublicMessage(public_message) => {
                 DecryptedMessage::from_inbound_public_message(
@@ -175,7 +183,7 @@ impl PublicGroup {
 
         let unverified_message = self
             .parse_message(decrypted_message, None)
-            .map_err(ProcessMessageError::from)?;
+            .map_err(PublicProcessMessageError::from)?;
         self.process_unverified_message(crypto, unverified_message)
     }
 }
@@ -200,7 +208,7 @@ impl PublicGroup {
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241
@@ -211,7 +219,7 @@ impl PublicGroup {
         &self,
         crypto: &impl OpenMlsCrypto,
         unverified_message: UnverifiedMessage,
-    ) -> Result<ProcessedMessage, ProcessMessageError> {
+    ) -> Result<ProcessedMessage, PublicProcessMessageError> {
         // Checks the following semantic validation:
         //  - ValSem010
         //  - ValSem246 (as part of ValSem010)
@@ -221,72 +229,241 @@ impl PublicGroup {
 
         match content.sender() {
             Sender::Member(_) | Sender::NewMemberCommit | Sender::NewMemberProposal => {
-                let sender = content.sender().clone();
-                let authenticated_data = content.authenticated_data().to_owned();
+                self.process_internal_authenticated_content(crypto, content, credential)
+            }
+            Sender::External(_) => {
+                self.process_external_authenticated_content(crypto, content, credential)
+            }
+        }
+    }
 
-                let content = match content.content() {
-                    FramedContentBody::Application(application_message) => {
-                        ProcessedMessageContent::ApplicationMessage(ApplicationMessage::new(
-                            application_message.as_slice().to_owned(),
-                        ))
-                    }
-                    FramedContentBody::Proposal(_) => {
-                        let proposal = Box::new(QueuedProposal::from_authenticated_content_by_ref(
-                            self.ciphersuite(),
-                            crypto,
-                            content,
-                        )?);
-                        if matches!(sender, Sender::NewMemberProposal) {
-                            ProcessedMessageContent::ExternalJoinProposalMessage(proposal)
-                        } else {
-                            ProcessedMessageContent::ProposalMessage(proposal)
-                        }
-                    }
-                    FramedContentBody::Commit(_) => {
-                        let staged_commit = self.stage_commit(&content, crypto)?;
-                        ProcessedMessageContent::StagedCommitMessage(Box::new(staged_commit))
-                    }
-                };
+    /// This processing function does most of the semantic verifications.
+    /// It returns a [ProcessedMessage] enum.
+    /// Checks the following semantic validation:
+    ///  - ValSem008
+    ///  - ValSem010
+    ///  - ValSem101
+    ///  - ValSem102
+    ///  - ValSem104
+    ///  - ValSem106
+    ///  - ValSem107
+    ///  - ValSem108
+    ///  - ValSem110
+    ///  - ValSem111
+    ///  - ValSem112
+    ///  - ValSem200
+    ///  - ValSem201
+    ///  - ValSem202: Path must be the right length
+    ///  - ValSem203: Path secrets must decrypt correctly
+    ///  - ValSem204: Public keys from Path must be verified and match the
+    ///    private keys from the direct path
+    ///  - ValSem205
+    ///  - ValSem240
+    ///  - ValSem241
+    ///  - ValSem242
+    ///  - ValSem244
+    ///  - ValSem246 (as part of ValSem010)
+    #[cfg(feature = "extensions-draft-08")]
+    pub fn process_unverified_message_with_app_data_updates(
+        &self,
+        crypto: &impl OpenMlsCrypto,
+        unverified_message: UnverifiedMessage,
+        app_data_dict_updates: Option<AppDataUpdates>,
+    ) -> Result<ProcessedMessage, PublicProcessMessageError> {
+        // Checks the following semantic validation:
+        //  - ValSem010
+        //  - ValSem246 (as part of ValSem010)
+        //  - https://validation.openmls.tech/#valn1203
+        let (content, credential) =
+            unverified_message.verify(self.ciphersuite(), crypto, self.version())?;
 
+        match content.sender() {
+            Sender::Member(_) | Sender::NewMemberCommit | Sender::NewMemberProposal => self
+                .process_internal_authenticated_content_with_app_data_updates(
+                    crypto,
+                    content,
+                    credential,
+                    app_data_dict_updates,
+                ),
+            Sender::External(_) => {
+                self.process_external_authenticated_content(crypto, content, credential)
+            }
+        }
+    }
+
+    fn process_internal_authenticated_content(
+        &self,
+        crypto: &impl OpenMlsCrypto,
+        content: AuthenticatedContent,
+        credential: Credential,
+    ) -> Result<ProcessedMessage, PublicProcessMessageError> {
+        let sender = content.sender().clone();
+        let authenticated_data = content.authenticated_data().to_owned();
+
+        let content = match content.content() {
+            FramedContentBody::Application(application_message) => {
+                ProcessedMessageContent::ApplicationMessage(ApplicationMessage::new(
+                    application_message.as_slice().to_owned(),
+                ))
+            }
+            FramedContentBody::Proposal(_) => {
+                let proposal = Box::new(QueuedProposal::from_authenticated_content_by_ref(
+                    self.ciphersuite(),
+                    crypto,
+                    content,
+                )?);
+                if matches!(sender, Sender::NewMemberProposal) {
+                    ProcessedMessageContent::ExternalJoinProposalMessage(proposal)
+                } else {
+                    ProcessedMessageContent::ProposalMessage(proposal)
+                }
+            }
+            FramedContentBody::Commit(_) => {
+                let staged_commit = self.stage_commit(&content, crypto)?;
+                ProcessedMessageContent::StagedCommitMessage(Box::new(staged_commit))
+            }
+        };
+
+        Ok(ProcessedMessage::new(
+            self.group_id().clone(),
+            self.group_context().epoch(),
+            sender,
+            authenticated_data,
+            content,
+            credential,
+        ))
+    }
+
+    #[cfg(feature = "extensions-draft-08")]
+    fn process_internal_authenticated_content_with_app_data_updates(
+        &self,
+        crypto: &impl OpenMlsCrypto,
+        content: AuthenticatedContent,
+        credential: Credential,
+        app_data_dict_updates: Option<AppDataUpdates>,
+    ) -> Result<ProcessedMessage, PublicProcessMessageError> {
+        let sender = content.sender().clone();
+        let authenticated_data = content.authenticated_data().to_owned();
+
+        debug_assert!(matches!(
+            sender,
+            Sender::Member(_) | Sender::NewMemberCommit | Sender::NewMemberProposal
+        ));
+
+        let content = match content.content() {
+            FramedContentBody::Application(application_message) => {
+                ProcessedMessageContent::ApplicationMessage(ApplicationMessage::new(
+                    application_message.as_slice().to_owned(),
+                ))
+            }
+            FramedContentBody::Proposal(_) => {
+                let proposal = Box::new(QueuedProposal::from_authenticated_content_by_ref(
+                    self.ciphersuite(),
+                    crypto,
+                    content,
+                )?);
+                if matches!(sender, Sender::NewMemberProposal) {
+                    ProcessedMessageContent::ExternalJoinProposalMessage(proposal)
+                } else {
+                    ProcessedMessageContent::ProposalMessage(proposal)
+                }
+            }
+            FramedContentBody::Commit(_) => {
+                let staged_commit = self.stage_commit_with_app_data_updates(
+                    &content,
+                    crypto,
+                    app_data_dict_updates,
+                )?;
+
+                ProcessedMessageContent::StagedCommitMessage(Box::new(staged_commit))
+            }
+        };
+
+        Ok(ProcessedMessage::new(
+            self.group_id().clone(),
+            self.group_context().epoch(),
+            sender,
+            authenticated_data,
+            content,
+            credential,
+        ))
+    }
+
+    fn process_external_authenticated_content(
+        &self,
+        crypto: &impl OpenMlsCrypto,
+        content: AuthenticatedContent,
+        credential: Credential,
+    ) -> Result<ProcessedMessage, PublicProcessMessageError> {
+        let sender = content.sender().clone();
+        let data = content.authenticated_data().to_owned();
+
+        debug_assert!(matches!(sender, Sender::External(_)));
+
+        // https://validation.openmls.tech/#valn1501
+        match content.content() {
+            FramedContentBody::Application(_) => {
+                Err(PublicProcessMessageError::UnauthorizedExternalApplicationMessage)
+            }
+            // TODO: https://validation.openmls.tech/#valn1502
+            FramedContentBody::Proposal(Proposal::GroupContextExtensions(_)) => {
+                let content = ProcessedMessageContent::ProposalMessage(Box::new(
+                    QueuedProposal::from_authenticated_content_by_ref(
+                        self.ciphersuite(),
+                        crypto,
+                        content,
+                    )?,
+                ));
                 Ok(ProcessedMessage::new(
                     self.group_id().clone(),
                     self.group_context().epoch(),
                     sender,
-                    authenticated_data,
+                    data,
                     content,
                     credential,
                 ))
             }
-            Sender::External(_) => {
-                let sender = content.sender().clone();
-                let data = content.authenticated_data().to_owned();
-                match content.content() {
-                    FramedContentBody::Application(_) => {
-                        Err(ProcessMessageError::UnauthorizedExternalApplicationMessage)
-                    }
-                    FramedContentBody::Proposal(Proposal::Remove(_)) => {
-                        let content = ProcessedMessageContent::ProposalMessage(Box::new(
-                            QueuedProposal::from_authenticated_content_by_ref(
-                                self.ciphersuite(),
-                                crypto,
-                                content,
-                            )?,
-                        ));
-                        Ok(ProcessedMessage::new(
-                            self.group_id().clone(),
-                            self.group_context().epoch(),
-                            sender,
-                            data,
-                            content,
-                            credential,
-                        ))
-                    }
-                    // TODO #151/#106
-                    FramedContentBody::Proposal(_) => {
-                        Err(ProcessMessageError::UnsupportedProposalType)
-                    }
-                    FramedContentBody::Commit(_) => unimplemented!(),
-                }
+
+            FramedContentBody::Proposal(Proposal::Remove(_)) => {
+                let content = ProcessedMessageContent::ProposalMessage(Box::new(
+                    QueuedProposal::from_authenticated_content_by_ref(
+                        self.ciphersuite(),
+                        crypto,
+                        content,
+                    )?,
+                ));
+                Ok(ProcessedMessage::new(
+                    self.group_id().clone(),
+                    self.group_context().epoch(),
+                    sender,
+                    data,
+                    content,
+                    credential,
+                ))
+            }
+            FramedContentBody::Proposal(Proposal::Add(_)) => {
+                let content = ProcessedMessageContent::ProposalMessage(Box::new(
+                    QueuedProposal::from_authenticated_content_by_ref(
+                        self.ciphersuite(),
+                        crypto,
+                        content,
+                    )?,
+                ));
+                Ok(ProcessedMessage::new(
+                    self.group_id().clone(),
+                    self.group_context().epoch(),
+                    sender,
+                    data,
+                    content,
+                    credential,
+                ))
+            }
+            // TODO #151/#106
+            FramedContentBody::Proposal(_) => {
+                Err(PublicProcessMessageError::UnsupportedProposalType)
+            }
+            FramedContentBody::Commit(_) => {
+                Err(PublicProcessMessageError::UnauthorizedExternalCommitMessage)
             }
         }
     }

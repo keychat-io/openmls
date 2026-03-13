@@ -34,10 +34,11 @@ use crate::{
     ciphersuite::{hash_ref::ProposalRef, signable::Verifiable},
     error::LibraryError,
     extensions::RequiredCapabilitiesExtension,
-    framing::InterimTranscriptHashInput,
+    framing::{InterimTranscriptHashInput, Sender},
+    group::mls_group::creation::LeafNodeLifetimePolicy,
     messages::{
         group_info::{GroupInfo, VerifiableGroupInfo},
-        proposals::{Proposal, ProposalOrRefType, ProposalType},
+        proposals::Proposal,
         ConfirmationTag, PathSecret,
     },
     schedule::CommitSecret,
@@ -123,6 +124,28 @@ impl PublicGroup {
     where
         StorageProvider: PublicStorageProvider<Error = StorageError>,
     {
+        let (public_group, group_info) = PublicGroup::from_ratchet_tree(
+            crypto,
+            ratchet_tree,
+            verifiable_group_info,
+            proposal_store,
+            LeafNodeLifetimePolicy::Verify,
+        )?;
+
+        public_group
+            .store(storage)
+            .map_err(CreationFromExternalError::WriteToStorageError)?;
+
+        Ok((public_group, group_info))
+    }
+
+    pub(crate) fn from_ratchet_tree<StorageError>(
+        crypto: &impl OpenMlsCrypto,
+        ratchet_tree: RatchetTreeIn,
+        verifiable_group_info: VerifiableGroupInfo,
+        proposal_store: ProposalStore,
+        validate_lifetimes: LeafNodeLifetimePolicy,
+    ) -> Result<(Self, GroupInfo), CreationFromExternalError<StorageError>> {
         let ciphersuite = verifiable_group_info.ciphersuite();
 
         let group_id = verifiable_group_info.group_id();
@@ -140,19 +163,23 @@ impl PublicGroup {
         let treesync = TreeSync::from_ratchet_tree(crypto, ciphersuite, ratchet_tree)?;
 
         let mut encryption_keys = HashSet::new();
+        let mut signature_keys = HashSet::new();
 
         // Perform basic checks that the leaf nodes in the ratchet tree are valid
         // These checks only do those that don't need group context. We do the full
         // checks later, but do these here to fail early in case of funny business
-        treesync.full_leaves().try_for_each(|leaf_node| {
+        // https://validation.openmls.tech/#valn1407
+        treesync.full_leaves().try_for_each(|(_, leaf_node)| {
             leaf_node.validate_locally()?;
 
+            // Check that no two nodes share a signature key.
+            // https://validation.openmls.tech/#valn0111
+            if !signature_keys.insert(leaf_node.signature_key()) {
+                return Err(CreationFromExternalError::DuplicateSignatureKey);
+            }
+
             // Check that no two nodes share an encryption key.
-            // This is a bit stronger than what the spec requires: It requires that the encryption keys
-            // in parent nodes and unmerged leaves must be unique. Here, we check that all encryption
-            // keys (all leaf nodes, incl. unmerged and all parent nodes) are unique.
-            //
-            // https://validation.openmls.tech/#valn1410
+            // https://validation.openmls.tech/#valn0112
             if !encryption_keys.insert(leaf_node.encryption_key()) {
                 return Err(CreationFromExternalError::DuplicateEncryptionKey);
             }
@@ -259,11 +286,9 @@ impl PublicGroup {
         public_group
             .treesync
             .full_leaves()
-            .try_for_each(|leaf_node| public_group.validate_leaf_node(leaf_node))?;
-
-        public_group
-            .store(storage)
-            .map_err(CreationFromExternalError::WriteToStorageError)?;
+            .try_for_each(|(_, leaf_node)| {
+                public_group.validate_leaf_node_inner(leaf_node, validate_lifetimes)
+            })?;
 
         Ok((public_group, group_info))
     }
@@ -273,13 +298,7 @@ impl PublicGroup {
         &self,
         commit: &StagedCommit,
     ) -> Result<LeafNodeIndex, LibraryError> {
-        self.leftmost_free_index(commit.queued_proposals().filter_map(|p| {
-            if matches!(p.proposal_or_ref_type(), ProposalOrRefType::Proposal) {
-                Some(Some(p.proposal()))
-            } else {
-                None
-            }
-        }))
+        self.leftmost_free_index(commit.queued_proposals())
     }
 
     /// Returns the leftmost free leaf index.
@@ -290,37 +309,30 @@ impl PublicGroup {
     /// The proposals must be validated before calling this function.
     pub(crate) fn leftmost_free_index<'a>(
         &self,
-        mut inline_proposals: impl Iterator<Item = Option<&'a Proposal>>,
+        queued_proposals: impl Iterator<Item = &'a QueuedProposal>,
     ) -> Result<LeafNodeIndex, LibraryError> {
         // Leftmost free leaf in the tree
         let free_leaf_index = self.treesync().free_leaf_index();
-        // Returns the first remove proposal (if there is one)
-        let remove_proposal_option = inline_proposals
-            .find(|proposal| match proposal {
-                Some(p) => p.is_type(ProposalType::Remove),
-                None => false,
-            })
-            .flatten();
-        let leaf_index = if let Some(remove_proposal) = remove_proposal_option {
-            if let Proposal::Remove(remove_proposal) = remove_proposal {
-                let removed_index = remove_proposal.removed();
-                // The committer should always be in the left-most leaf.
-                if removed_index < free_leaf_index {
-                    removed_index
-                } else {
-                    free_leaf_index
-                }
-            } else {
-                return Err(LibraryError::custom("missing key package"));
+        // Indices that are freed due to queued self-remove proposals or remove
+        // proposals.
+        let removed_indices = queued_proposals.filter_map(|proposal| {
+            match (proposal.proposal(), proposal.sender()) {
+                (Proposal::Remove(r), _) => Some(r.removed),
+                (Proposal::SelfRemove, Sender::Member(sender)) => Some(*sender),
+                _ => None, // SelfRemove proposals must come from group members
             }
-        } else {
-            free_leaf_index
-        };
-        Ok(leaf_index)
+        });
+        // Find the leftmost free leaf index, which is either the free leaf index
+        // or the leftmost index of a self-remove proposal or remove proposal.
+        removed_indices
+            .into_iter()
+            .chain(std::iter::once(free_leaf_index))
+            .min()
+            .ok_or_else(|| LibraryError::custom("No free leaf index found"))
     }
 
     /// Create an empty  [`PublicGroupDiff`] based on this [`PublicGroup`].
-    pub(crate) fn empty_diff(&self) -> PublicGroupDiff {
+    pub(crate) fn empty_diff(&self) -> PublicGroupDiff<'_> {
         PublicGroupDiff::new(self)
     }
 
@@ -368,7 +380,7 @@ impl PublicGroup {
 
     /// Get an iterator over all [`Member`]s of this [`PublicGroup`].
     pub fn members(&self) -> impl Iterator<Item = Member> + '_ {
-        self.treesync().full_leave_members()
+        self.treesync().full_leaf_members()
     }
 
     /// Export the nodes of the public tree.
@@ -434,8 +446,8 @@ impl PublicGroup {
         self.group_context.required_capabilities()
     }
 
-    /// Get treesync.
-    fn treesync(&self) -> &TreeSync {
+    /// Returns the current tree state of the group, in the form of a [`TreeSync`].
+    pub fn treesync(&self) -> &TreeSync {
         &self.treesync
     }
 

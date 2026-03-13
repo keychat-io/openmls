@@ -131,7 +131,7 @@ impl AuthenticatedContent {
         Self::new_and_sign(
             framing_parameters,
             Sender::Member(sender_leaf_index),
-            FramedContentBody::Application(application_message.into()),
+            FramedContentBody::application(application_message),
             context,
             signer,
         )
@@ -217,7 +217,7 @@ impl AuthenticatedContent {
         Self::new_and_sign(
             framing_parameters,
             sender,
-            FramedContentBody::Commit(commit),
+            FramedContentBody::commit(commit),
             context,
             signer,
         )
@@ -293,7 +293,11 @@ impl AuthenticatedContent {
 }
 
 impl SignedStruct<FramedContentTbs> for AuthenticatedContent {
-    fn from_payload(tbs: FramedContentTbs, signature: Signature) -> Self {
+    fn from_payload(
+        tbs: FramedContentTbs,
+        signature: Signature,
+        _serialized_payload: Vec<u8>,
+    ) -> Self {
         let auth = FramedContentAuthData {
             signature,
             // Tags must always be added after the signature

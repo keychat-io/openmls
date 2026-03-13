@@ -4,6 +4,9 @@
 
 use thiserror::Error;
 
+#[cfg(feature = "extensions-draft-08")]
+use super::public_group::errors::ApplyAppDataUpdateError;
+
 pub use super::mls_group::errors::*;
 use super::public_group::errors::CreationFromExternalError;
 use crate::{
@@ -11,11 +14,16 @@ use crate::{
     error::LibraryError,
     extensions::errors::{ExtensionError, InvalidExtensionError},
     framing::errors::MessageDecryptionError,
+    group::commit_builder::external_commits::ExternalCommitBuilderError,
     key_packages::errors::{KeyPackageExtensionSupportError, KeyPackageVerifyError},
     messages::{group_info::GroupInfoError, GroupSecretsError},
-    schedule::errors::PskError,
+    prelude::ExtensionType,
+    schedule::{errors::PskError, PreSharedKeyId},
     treesync::errors::*,
 };
+
+#[cfg(doc)]
+use crate::{group::GroupId, treesync::LeafNodeParameters};
 
 /// Welcome error
 #[derive(Error, Debug, PartialEq, Clone)]
@@ -65,8 +73,8 @@ pub enum WelcomeError<StorageError> {
     /// Could not decrypt the Welcome message.
     #[error("Could not decrypt the Welcome message.")]
     UnableToDecrypt,
-    /// Unsupported extensions found in the KeyPackage of another member.
-    #[error("Unsupported extensions found in the KeyPackage of another member.")]
+    /// Unsupported extensions found in the GroupContext or KeyPackage of another member.
+    #[error("Unsupported extensions found in the GroupContext or KeyPackage of another member.")]
     UnsupportedExtensions,
     /// See [`PskError`] for more details.
     #[error(transparent)]
@@ -90,6 +98,9 @@ pub enum WelcomeError<StorageError> {
     /// This error indicates that an error occurred while reading or writing from/to storage.
     #[error("An error occurred when querying storage")]
     StorageError(StorageError),
+    /// A group with this [`GroupId`] already exists.
+    #[error("A group with this [`GroupId`] already exists.")]
+    GroupAlreadyExists,
 }
 
 /// External Commit error
@@ -115,7 +126,7 @@ pub enum ExternalCommitError<StorageError> {
     InvalidGroupInfoSignature,
     /// Error creating external commit.
     #[error("Error creating external commit.")]
-    CommitError,
+    CommitError(#[from] CreateCommitError),
     /// This error indicates the public tree is invalid. See
     /// [`CreationFromExternalError`] for more details.
     #[error(transparent)]
@@ -126,6 +137,64 @@ pub enum ExternalCommitError<StorageError> {
     /// An erorr occurred when writing group to storage
     #[error("An error occurred when writing group to storage.")]
     StorageError(StorageError),
+}
+
+impl<StorageError> From<ExternalCommitBuilderError<StorageError>>
+    for ExternalCommitError<StorageError>
+{
+    fn from(error: ExternalCommitBuilderError<StorageError>) -> Self {
+        match error {
+            ExternalCommitBuilderError::LibraryError(library_error) => {
+                ExternalCommitError::LibraryError(library_error)
+            }
+            ExternalCommitBuilderError::MissingRatchetTree => {
+                ExternalCommitError::MissingRatchetTree
+            }
+            ExternalCommitBuilderError::MissingExternalPub => {
+                ExternalCommitError::MissingExternalPub
+            }
+            ExternalCommitBuilderError::UnsupportedCiphersuite => {
+                ExternalCommitError::UnsupportedCiphersuite
+            }
+            ExternalCommitBuilderError::PublicGroupError(creation_from_external_error) => {
+                ExternalCommitError::PublicGroupError(creation_from_external_error)
+            }
+            ExternalCommitBuilderError::StorageError(error) => {
+                ExternalCommitError::StorageError(error)
+            }
+            // These should not happen since `join_by_external_commit` doesn't
+            // take proposals as input.
+            ExternalCommitBuilderError::InvalidProposal(e) => {
+                log::error!("Error validating proposal in external commit: {e}");
+                ExternalCommitError::LibraryError(LibraryError::custom(
+                    "Error creating external commit",
+                ))
+            }
+        }
+    }
+}
+
+impl<StorageError> From<ExternalCommitBuilderFinalizeError<StorageError>>
+    for ExternalCommitError<StorageError>
+{
+    fn from(error: ExternalCommitBuilderFinalizeError<StorageError>) -> Self {
+        match error {
+            ExternalCommitBuilderFinalizeError::LibraryError(library_error) => {
+                ExternalCommitError::LibraryError(library_error)
+            }
+            ExternalCommitBuilderFinalizeError::StorageError(error) => {
+                ExternalCommitError::StorageError(error)
+            }
+            ExternalCommitBuilderFinalizeError::MergeCommitError(e) => {
+                log::error!("Error merging external commit: {e}");
+                // This shouldn't happen, since we merge our own external
+                // commit.
+                ExternalCommitError::LibraryError(LibraryError::custom(
+                    "Error merging external commit",
+                ))
+            }
+        }
+    }
 }
 
 /// Stage Commit error
@@ -199,9 +268,20 @@ pub enum StageCommitError {
     GroupContextExtensionsProposalValidationError(
         #[from] GroupContextExtensionsProposalValidationError,
     ),
+    #[cfg(feature = "extensions-draft-08")]
+    /// See [`AppDataUpdateValidationError`] for more details.
+    #[error(transparent)]
+    AppDataUpdateValidationError(#[from] AppDataUpdateValidationError),
     /// See [`LeafNodeValidationError`] for more details.
     #[error(transparent)]
     LeafNodeValidation(#[from] LeafNodeValidationError),
+    /// See [`ApplyAppDataUpdateError`] for more details.
+    #[cfg(feature = "extensions-draft-08")]
+    #[error(transparent)]
+    ApplyAppDataUpdateError(#[from] ApplyAppDataUpdateError),
+    /// Duplicate PSK Proposal.
+    #[error("Duplicate PSK proposal with PSK ID {0:?}.")]
+    DuplicatePskId(PreSharedKeyId),
 }
 
 /// Create commit error
@@ -240,6 +320,10 @@ pub enum CreateCommitError {
     /// See [`InvalidExtensionError`] for more details.
     #[error(transparent)]
     InvalidExtensionError(#[from] InvalidExtensionError),
+    #[cfg(feature = "extensions-draft-08")]
+    /// See [`AppDataUpdateValidationError`] for more details.
+    #[error(transparent)]
+    AppDataUpdateValidationError(#[from] AppDataUpdateValidationError),
     /// See [`GroupContextExtensionsProposalValidationError`] for more details.
     #[error(transparent)]
     GroupContextExtensionsProposalValidationError(
@@ -248,6 +332,19 @@ pub enum CreateCommitError {
     /// See [`TreeSyncAddLeaf`] for more details.
     #[error(transparent)]
     TreeSyncAddLeaf(#[from] TreeSyncAddLeaf),
+    /// Invalid [`LeafNodeParameters`]. `[CredentialWithKey]` can't be set with new signer.
+    #[error("Invalid LeafNodeParameters. CredentialWithKey can't be set with new signer.")]
+    InvalidLeafNodeParameters,
+    /// Invalid external commit.
+    #[error("Invalid external commit.")]
+    InvalidExternalCommit(#[from] ExternalCommitValidationError),
+    /// See [`ApplyAppDataUpdateError`] for more details.
+    #[cfg(feature = "extensions-draft-08")]
+    #[error(transparent)]
+    ApplyAppDataUpdateError(#[from] ApplyAppDataUpdateError),
+    /// See [`LeafNodeValidationError`] for more details.
+    #[error(transparent)]
+    LeafNodeValidation(#[from] LeafNodeValidationError),
 }
 
 /// Stage commit error
@@ -259,6 +356,20 @@ pub enum CommitBuilderStageError<StorageError> {
     /// Error interacting with storage.
     #[error("Error interacting with storage.")]
     KeyStoreError(StorageError),
+}
+
+/// Stage commit error
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum ExternalCommitBuilderFinalizeError<StorageError> {
+    /// See [`LibraryError`] for more details.
+    #[error(transparent)]
+    LibraryError(#[from] LibraryError),
+    /// Error interacting with storage.
+    #[error("Error interacting with storage.")]
+    StorageError(StorageError),
+    /// Error merging external commit.
+    #[error("Error merging external commit.")]
+    MergeCommitError(#[from] MergePendingCommitError<StorageError>),
 }
 
 /// Validation error
@@ -347,6 +458,9 @@ pub enum ValidationError {
     /// See [`ExternalCommitValidationError`] for more details.
     #[error(transparent)]
     ExternalCommitValidation(#[from] ExternalCommitValidationError),
+    /// See [`InvalidExtensionError`]
+    #[error("Invalid extension")]
+    InvalidExtension(#[from] InvalidExtensionError),
 }
 
 /// Proposal validation error
@@ -419,20 +533,21 @@ pub enum ExternalCommitValidationError {
     /// Found inline Add or Update proposals.
     #[error("Found inline Add or Update proposals.")]
     InvalidInlineProposals,
-    // TODO #803: this seems unused
     /// Found multiple inline Remove proposals.
     #[error("Found multiple inline Remove proposals.")]
     MultipleRemoveProposals,
     /// Remove proposal targets the wrong group member.
     #[error("Remove proposal targets the wrong group member.")]
     InvalidRemoveProposal,
-    // TODO #803: this seems unused
     /// External Commit has to contain a path.
     #[error("External Commit has to contain a path.")]
     NoPath,
     /// External commit contains referenced proposal
     #[error("Found a referenced proposal in an External Commit.")]
     ReferencedProposal,
+    /// External committer's leaf node does not support all group context extensions.
+    #[error("External committer's leaf node does not support all group context extensions.")]
+    UnsupportedGroupContextExtensions,
 }
 
 /// Create add proposal error
@@ -478,6 +593,9 @@ pub(crate) enum FromCommittedProposalsError {
     /// The sender of a Commit tried to remove themselves.
     #[error("The sender of a Commit tried to remove themselves.")]
     SelfRemoval,
+    /// Commit contains two PSK proposals with the same PSK ID.
+    #[error("Commit contains two PSK proposals the PSK ID {0:?}.")]
+    DuplicatePskId(PreSharedKeyId),
 }
 
 /// Create group context ext proposal error
@@ -507,6 +625,9 @@ pub enum CreateGroupContextExtProposalError<StorageError> {
     /// Error writing updated group to storage.
     #[error("Error writing updated group data to storage.")]
     StorageError(StorageError),
+    /// Error validating the extensions
+    #[error(transparent)]
+    InvalidExtensionError(#[from] InvalidExtensionError),
 }
 
 /// Error merging a commit.
@@ -518,6 +639,37 @@ pub enum MergeCommitError<StorageError> {
     /// Error writing updated group to storage.
     #[error("Error writing updated group data to storage.")]
     StorageError(StorageError),
+}
+
+#[cfg(feature = "extensions-draft-08")]
+/// Error validating an AppDataUpdate proposal.
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum AppDataUpdateValidationError {
+    /// [`AppDataUpdateProposal`](crate::messages::proposals::AppDataUpdateProposal)s
+    /// occur before
+    /// [`GroupContextExtensionsProposal`](crate::messages::proposals::GroupContextExtensionProposal)s.
+    #[error("AppDataUpdate proposals occur before GroupContextExtensions proposals.")]
+    IncorrectOrder,
+    /// Attempted to update the [`AppDataDictionary`](crate::extensions::AppDataDictionary)
+    /// in the
+    /// [`GroupContextExtensionsProposal`](crate::messages::proposals::GroupContextExtensionProposal) directly.
+    #[error("Attempted to update the AppDataDictionary in the GroupContextExtensions proposal directly.")]
+    CannotUpdateDictionaryDirectly,
+    /// More than one [`AppDataUpdate]` proposal per [`ComponentId`] had a Remove operation.
+    ///
+    /// [`ComponentId`]: crate::component::ComponentId
+    #[error("More than one AppDataUpdate proposal per ComponentId had a Remove operation.")]
+    MoreThanOneRemovePerComponentId,
+    /// Proposals for a [`ComponentId`] had both Remove and Update operations.
+    ///
+    /// [`ComponentId`]: crate::component::ComponentId
+    #[error("Proposals for a ComponentId had both Remove and Update operations.")]
+    CombinedRemoveAndUpdateOperations,
+    /// Proposals for a [`ComponentId`] had a Remove for a nonexistent component.
+    ///
+    /// [`ComponentId`]: crate::component::ComponentId
+    #[error("Proposals for a ComponentId had a Remove for a nonexistent component.")]
+    CannotRemoveNonexistentComponent,
 }
 
 /// Error validation a GroupContextExtensions proposal.
@@ -552,4 +704,11 @@ pub enum GroupContextExtensionsProposalValidationError {
         "An extension in the group context extensions is not listed in the required capabilties' extension types."
     )]
     ExtensionNotInRequiredCapabilities,
+
+    /// An extension with a type that is not valid in the group context
+    #[error("Expected valid `Extension` for `GroupContextExtension`, got `{wrong:?}`")]
+    InvalidExtensionTypeError {
+        /// found invalid type
+        wrong: ExtensionType,
+    },
 }

@@ -7,6 +7,7 @@ use crate::{
 // Verifies that when we add a leaf to a tree with blank leaf nodes, the leaf will be added at the leftmost free leaf index
 #[openmls_test::openmls_test]
 fn test_free_leaf_computation() {
+    let provider = &Provider::default();
     let (c_0, sk_0) = new_credential(provider, b"leaf0", ciphersuite.signature_algorithm());
 
     let kpb_0 = KeyPackageBundle::generate(provider, &sk_0, ciphersuite, c_0);
@@ -16,13 +17,13 @@ fn test_free_leaf_computation() {
 
     // Build a rudimentary tree with two populated and two empty leaf nodes.
     let ratchet_tree = RatchetTree::trimmed(vec![
-        Some(Node::LeafNode(kpb_0.key_package().leaf_node().clone())), // Leaf 0
+        Some(Node::leaf_node(kpb_0.key_package().leaf_node().clone())), // Leaf 0
         None,
         None, // Leaf 1
         None,
         None, // Leaf 2
         None,
-        Some(Node::LeafNode(kpb_3.key_package().leaf_node().clone())), // Leaf 3
+        Some(Node::leaf_node(kpb_3.key_package().leaf_node().clone())), // Leaf 3
     ]);
 
     // Get the encryption key pair from the leaf.

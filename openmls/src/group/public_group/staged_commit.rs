@@ -1,16 +1,23 @@
-use super::{super::errors::*, *};
+use super::{super::errors::*, diff::apply_proposals::ApplyProposalsValues, *};
 use crate::{
     framing::{mls_auth_content::AuthenticatedContent, mls_content::FramedContentBody, Sender},
     group::{
         mls_group::staged_commit::StagedCommitState, proposal_store::ProposalQueue, StagedCommit,
     },
-    messages::{proposals::ProposalOrRef, Commit},
+    messages::{
+        proposals::{ProposalOrRef, ProposalType},
+        Commit,
+    },
+    treesync::errors::LeafNodeValidationError,
 };
+
+#[cfg(feature = "extensions-draft-08")]
+use crate::prelude::processing::AppDataUpdates;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "test-utils"), derive(Clone, PartialEq))]
 pub struct PublicStagedCommitState {
-    pub(super) staged_diff: StagedPublicGroupDiff,
+    pub(crate) staged_diff: StagedPublicGroupDiff,
     pub(super) update_path_leaf_node: Option<LeafNode>,
 }
 
@@ -68,24 +75,45 @@ impl PublicGroup {
         if sender == &Sender::NewMemberCommit {
             // External commit, there MUST be a path
             // https://validation.openmls.tech/#valn0405
-            if commit.path.is_none() {
+            let Some(path) = &commit.path else {
                 return Err(ExternalCommitValidationError::NoPath.into());
+            };
+
+            // External Commit, The capabilities of the leaf node in the path MUST support all
+            // group context extensions.
+            // https://validation.openmls.tech/#valn1210
+            let leaf_nodes_supports_group_context_extensions = path
+                .leaf_node()
+                .capabilities()
+                .contains_extensions(self.group_context().extensions());
+
+            if !leaf_nodes_supports_group_context_extensions {
+                return Err(
+                    ExternalCommitValidationError::UnsupportedGroupContextExtensions.into(),
+                );
             }
 
             // ValSem244: External Commit, There MUST NOT be any referenced proposals.
             // https://validation.openmls.tech/#valn0406
-            if commit
-                .proposals
-                .iter()
-                .any(|proposal| matches!(proposal, ProposalOrRef::Reference(_)))
-            {
+            // Only SelfRemove proposals are allowed
+            if commit.proposals.iter().any(|proposal| {
+                let ProposalOrRef::Reference(proposal_ref) = proposal else {
+                    return false;
+                };
+                // Proposal references are only allowed if they refer to a
+                // SelfRemove proposal in our store
+                !self.proposal_store.proposals().any(|p| {
+                    p.proposal_reference_ref() == proposal_ref.as_ref()
+                        && p.proposal().is_type(ProposalType::SelfRemove)
+                })
+            }) {
                 return Err(ExternalCommitValidationError::ReferencedProposal.into());
             }
 
             let number_of_remove_proposals = commit
                 .proposals
                 .iter()
-                .filter(|prop| matches!(prop, ProposalOrRef::Proposal(Proposal::Remove(_))))
+                .filter(|prop| prop.as_proposal().filter(|p| p.is_remove()).is_some())
                 .count();
 
             // https://validation.openmls.tech/#valn0402
@@ -110,15 +138,33 @@ impl PublicGroup {
                 FromCommittedProposalsError::LibraryError(e) => StageCommitError::LibraryError(e),
                 FromCommittedProposalsError::ProposalNotFound => StageCommitError::MissingProposal,
                 FromCommittedProposalsError::SelfRemoval => StageCommitError::AttemptedSelfRemoval,
+                FromCommittedProposalsError::DuplicatePskId(psk_id) => {
+                    StageCommitError::DuplicatePskId(psk_id)
+                }
             }
         })?;
 
         // https://validation.openmls.tech/#valn1207
         if let Some(update_path) = &commit.path {
             self.validate_leaf_node(update_path.leaf_node())?;
+
+            // The capabilities of the leaf node in the path MUST support all
+            // group context extensions.
+            // https://validation.openmls.tech/#valn1210
+            let leaf_node_supports_group_context_extensions = update_path
+                .leaf_node()
+                .capabilities()
+                .contains_extensions(self.group_context().extensions());
+
+            if !leaf_node_supports_group_context_extensions {
+                return Err(LeafNodeValidationError::UnsupportedExtensions.into());
+            }
         }
 
-        // Validate the staged proposals. This implements https://validation.openmls.tech/#valn1204.
+        // Validate the staged proposals. This implements
+        // - https://validation.openmls.tech/#valn0301
+        // - https://validation.openmls.tech/#valn1204
+        //
         // This is done by doing the following checks:
 
         // ValSem101
@@ -140,17 +186,21 @@ impl PublicGroup {
         // ValSem208
         // ValSem209
         self.validate_group_context_extensions_proposal(&proposal_queue)?;
+
+        #[cfg(feature = "extensions-draft-08")]
+        self.validate_app_data_update_proposals_and_group_context(&proposal_queue)?;
+
         // ValSem401
         // ValSem402
         // ValSem403
         self.validate_pre_shared_key_proposals(&proposal_queue)?;
 
         match sender {
-            Sender::Member(leaf_index) => {
+            Sender::Member(committer_leaf_index) => {
                 // ValSem110
                 // ValSem111
                 // ValSem112
-                self.validate_update_proposals(&proposal_queue, *leaf_index)?;
+                self.validate_update_proposals(&proposal_queue, *committer_leaf_index)?;
 
                 self.validate_no_external_init_proposals(&proposal_queue)?;
             }
@@ -174,14 +224,7 @@ impl PublicGroup {
         let sender_index = match sender {
             Sender::Member(leaf_index) => *leaf_index,
             Sender::NewMemberCommit => {
-                let inline_proposals = commit.proposals.iter().filter_map(|p| {
-                    if let ProposalOrRef::Proposal(inline_proposal) = p {
-                        Some(Some(inline_proposal))
-                    } else {
-                        None
-                    }
-                });
-                self.leftmost_free_index(inline_proposals)?
+                self.leftmost_free_index(proposal_queue.queued_proposals())?
             }
             _ => {
                 return Err(StageCommitError::SenderTypeExternal);
@@ -236,7 +279,7 @@ impl PublicGroup {
     ///  - ValSem202: Path must be the right length
     ///  - ValSem203: Path secrets must decrypt correctly
     ///  - ValSem204: Public keys from Path must be verified and match the
-    ///               private keys from the direct path
+    ///    private keys from the direct path
     ///  - ValSem205
     ///  - ValSem240
     ///  - ValSem241
@@ -263,6 +306,32 @@ impl PublicGroup {
         Ok(StagedCommit::new(proposal_queue, staged_commit_state))
     }
 
+    #[cfg(feature = "extensions-draft-08")]
+    pub(crate) fn stage_commit_with_app_data_updates(
+        &self,
+        mls_content: &AuthenticatedContent,
+        crypto: &impl OpenMlsCrypto,
+        app_data_dict_updates: Option<AppDataUpdates>,
+    ) -> Result<StagedCommit, StageCommitError> {
+        let (commit, proposal_queue, sender_index) = self.validate_commit(mls_content, crypto)?;
+
+        let staged_diff = self.stage_diff_with_app_data_updates(
+            mls_content,
+            &proposal_queue,
+            sender_index,
+            crypto,
+            app_data_dict_updates,
+        )?;
+        let staged_state = PublicStagedCommitState {
+            staged_diff,
+            update_path_leaf_node: commit.path.as_ref().map(|p| p.leaf_node().clone()),
+        };
+
+        let staged_commit_state = StagedCommitState::PublicState(Box::new(staged_state));
+
+        Ok(StagedCommit::new(proposal_queue, staged_commit_state))
+    }
+
     fn stage_diff(
         &self,
         mls_content: &AuthenticatedContent,
@@ -270,10 +339,54 @@ impl PublicGroup {
         sender_index: LeafNodeIndex,
         crypto: &impl OpenMlsCrypto,
     ) -> Result<StagedPublicGroupDiff, StageCommitError> {
-        let ciphersuite = self.ciphersuite();
         let mut diff = self.empty_diff();
 
         let apply_proposals_values = diff.apply_proposals(proposal_queue, None)?;
+
+        self.stage_diff_internal(
+            mls_content,
+            apply_proposals_values,
+            diff,
+            sender_index,
+            crypto,
+        )
+    }
+
+    #[cfg(feature = "extensions-draft-08")]
+    fn stage_diff_with_app_data_updates(
+        &self,
+        mls_content: &AuthenticatedContent,
+        proposal_queue: &ProposalQueue,
+        sender_index: LeafNodeIndex,
+        crypto: &impl OpenMlsCrypto,
+        app_data_dict_updates: Option<AppDataUpdates>,
+    ) -> Result<StagedPublicGroupDiff, StageCommitError> {
+        let mut diff = self.empty_diff();
+
+        let apply_proposals_values = diff.apply_proposals_with_app_data_updates(
+            proposal_queue,
+            None,
+            app_data_dict_updates,
+        )?;
+
+        self.stage_diff_internal(
+            mls_content,
+            apply_proposals_values,
+            diff,
+            sender_index,
+            crypto,
+        )
+    }
+
+    fn stage_diff_internal(
+        &self,
+        mls_content: &AuthenticatedContent,
+        apply_proposals_values: ApplyProposalsValues,
+        mut diff: PublicGroupDiff,
+        sender_index: LeafNodeIndex,
+        crypto: &impl OpenMlsCrypto,
+    ) -> Result<StagedPublicGroupDiff, StageCommitError> {
+        let ciphersuite = self.ciphersuite();
 
         let commit = match mls_content.content() {
             FramedContentBody::Commit(commit) => commit,
@@ -292,7 +405,7 @@ impl PublicGroup {
         };
 
         // Update group context
-        diff.update_group_context(crypto, apply_proposals_values.extensions.clone())?;
+        diff.update_group_context(crypto, apply_proposals_values.extensions)?;
 
         // Update the confirmed transcript hash before we compute the confirmation tag.
         diff.update_confirmed_transcript_hash(crypto, mls_content)?;

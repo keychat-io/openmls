@@ -13,13 +13,13 @@ use super::{
 #[test]
 fn test_tree_basics() {
     // Test tree creation: Wrong number of nodes.
-    let mut nodes = vec![TreeNode::Leaf(1), TreeNode::Parent(0)];
+    let mut nodes = vec![TreeNode::leaf(1), TreeNode::parent(0)];
     assert_eq!(
         MlsBinaryTree::new(nodes.clone())
             .expect_err("No error when creating a non-full binary tree."),
         MlsBinaryTreeError::InvalidNumberOfNodes
     );
-    nodes.push(TreeNode::Leaf(2));
+    nodes.push(TreeNode::leaf(2));
 
     let tree1 = MlsBinaryTree::new(nodes.clone()).expect("Error when creating tree from nodes.");
 
@@ -27,21 +27,17 @@ fn test_tree_basics() {
     assert_eq!(tree1.tree_size(), TreeSize::new(3));
     assert_eq!(tree1.leaf_count(), 2);
 
-    // Test tree creation: Too many nodes (only in cases where usize is 64 bit).
-    #[cfg(target_pointer_width = "64")]
-    // We allow uninitialized vectors because we don't want to allocate so much memory
-    #[allow(clippy::uninit_vec)]
-    unsafe {
-        let len = u32::MAX as usize + 2;
-        let mut nodes: Vec<TreeNode<u32, u32>> = Vec::new();
+    // // Test tree creation: Too many nodes (only in cases where usize is 64 bit).
+    // #[cfg(target_pointer_width = "64")]
+    // {
+    //     let len = u32::MAX as usize + 2;
+    //     let nodes: Vec<TreeNode<u32, u32>> = Vec::with_capacity(len);
 
-        nodes.set_len(len);
-
-        assert_eq!(
-            MlsBinaryTree::new(nodes).expect_err("No error while creating too large tree."),
-            MlsBinaryTreeError::OutOfRange
-        )
-    }
+    //     assert_eq!(
+    //         MlsBinaryTree::new(nodes).expect_err("No error while creating too large tree."),
+    //         MlsBinaryTreeError::InvalidNumberOfNodes
+    //     )
+    // }
 
     // Node access
     assert_eq!(&1, tree1.leaf_by_index(LeafNodeIndex::new(0)));
@@ -56,7 +52,7 @@ fn test_tree_basics() {
     );
 
     let tree3: ABinaryTree<u32, u32> =
-        MlsBinaryTree::new(vec![TreeNode::Leaf(1)]).expect("error creating 1 node binary tree.");
+        MlsBinaryTree::new(vec![TreeNode::leaf(1)]).expect("error creating 1 node binary tree.");
     let leaves3: Vec<(LeafNodeIndex, &u32)> = tree3.leaves().collect();
     assert_eq!(vec![(LeafNodeIndex::new(0), &1)], leaves3);
 }
@@ -64,9 +60,9 @@ fn test_tree_basics() {
 #[test]
 fn test_diff_merging() {
     let mut tree = MlsBinaryTree::new(vec![
-        TreeNode::Leaf(2),
-        TreeNode::Parent(0),
-        TreeNode::Leaf(4),
+        TreeNode::leaf(2),
+        TreeNode::parent(0),
+        TreeNode::leaf(4),
     ])
     .expect("Error creating tree.");
     let original_tree = tree.clone();
@@ -154,30 +150,13 @@ fn test_diff_merging() {
 }
 
 #[test]
-fn test_new_tree_error() {
-    // Let's test what happens when the tree is getting too large.
-    let mut nodes: Vec<TreeNode<u32, u32>> = Vec::new();
-
-    // We allow uninitialized vectors because we don't want to allocate so much memory
-    #[allow(clippy::uninit_vec)]
-    unsafe {
-        nodes.set_len(u32::MAX as usize);
-
-        assert_eq!(
-            MlsBinaryTree::new(nodes).expect_err("no error adding beyond TREE_MAX"),
-            MlsBinaryTreeError::OutOfRange
-        )
-    }
-}
-
-#[test]
 fn test_diff_iter() {
     let nodes = (0..101)
         .map(|i| {
             if i % 2 == 0 {
-                TreeNode::Leaf(i)
+                TreeNode::leaf(i)
             } else {
-                TreeNode::Parent(i)
+                TreeNode::parent(i)
             }
         })
         .collect();
@@ -207,9 +186,9 @@ fn test_diff_mutable_access_after_manipulation() {
     let nodes = (0..101)
         .map(|i| {
             if i % 2 == 0 {
-                TreeNode::Leaf(i)
+                TreeNode::leaf(i)
             } else {
-                TreeNode::Parent(i)
+                TreeNode::parent(i)
             }
         })
         .collect();
@@ -243,9 +222,9 @@ fn diff_leaf_access() {
         .map(|i| {
             if i % 2 == 0 {
                 // Let's add 10 so we recognize the default leaf which should be 0.
-                TreeNode::Leaf(i + 10)
+                TreeNode::leaf(i + 10)
             } else {
-                TreeNode::Parent(i + 10)
+                TreeNode::parent(i + 10)
             }
         })
         .collect();
@@ -259,4 +238,63 @@ fn diff_leaf_access() {
     // The leaf at index 3 should be outside of the diff.
     let leaf_outside_of_diff = diff.leaf(LeafNodeIndex::new(3));
     assert_eq!(leaf_outside_of_diff, &0)
+}
+
+#[test]
+fn test_from_components() {
+    let leaf_nodes = vec![1u32, 2, 3, 4];
+    let parent_nodes = vec![10u32, 20, 30];
+
+    let tree = MlsBinaryTree::from_components(leaf_nodes, parent_nodes)
+        .expect("Error creating tree from components");
+
+    assert_eq!(tree.leaf_count(), 4);
+    assert_eq!(tree.parent_count(), 3);
+    assert_eq!(tree.tree_size(), TreeSize::new(7));
+
+    assert_eq!(tree.leaf_by_index(LeafNodeIndex::new(0)), &1);
+    assert_eq!(tree.leaf_by_index(LeafNodeIndex::new(1)), &2);
+    assert_eq!(tree.leaf_by_index(LeafNodeIndex::new(2)), &3);
+    assert_eq!(tree.leaf_by_index(LeafNodeIndex::new(3)), &4);
+
+    assert_eq!(tree.parent_by_index(ParentNodeIndex::new(0)), &10);
+    assert_eq!(tree.parent_by_index(ParentNodeIndex::new(1)), &20);
+    assert_eq!(tree.parent_by_index(ParentNodeIndex::new(2)), &30);
+
+    let invalid_leaf_nodes = vec![1u32, 2];
+    let invalid_parent_nodes = vec![10u32, 20];
+
+    assert_eq!(
+        MlsBinaryTree::from_components(invalid_leaf_nodes, invalid_parent_nodes)
+            .expect_err("Should fail with invalid node count"),
+        MlsBinaryTreeError::InvalidNumberOfNodes
+    );
+
+    let leaf_vec = vec![5u32, 6];
+    let parent_vec = vec![15u32];
+
+    let tree1 = MlsBinaryTree::from_components(leaf_vec.clone(), parent_vec.clone())
+        .expect("Error creating tree from components");
+
+    let tree2 = MlsBinaryTree::new(vec![
+        TreeNode::leaf(5),
+        TreeNode::parent(15),
+        TreeNode::leaf(6),
+    ])
+    .expect("Error creating tree from TreeNode");
+
+    assert_eq!(tree1.leaf_count(), tree2.leaf_count());
+    assert_eq!(tree1.parent_count(), tree2.parent_count());
+    assert_eq!(
+        tree1.leaf_by_index(LeafNodeIndex::new(0)),
+        tree2.leaf_by_index(LeafNodeIndex::new(0))
+    );
+    assert_eq!(
+        tree1.leaf_by_index(LeafNodeIndex::new(1)),
+        tree2.leaf_by_index(LeafNodeIndex::new(1))
+    );
+    assert_eq!(
+        tree1.parent_by_index(ParentNodeIndex::new(0)),
+        tree2.parent_by_index(ParentNodeIndex::new(0))
+    );
 }

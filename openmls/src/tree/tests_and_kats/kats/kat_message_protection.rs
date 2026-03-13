@@ -125,10 +125,10 @@ pub fn run_test_vector(
         .supported_ciphersuites()
         .contains(&ciphersuite)
     {
-        log::debug!("Skipping unsupported ciphersuite {:?}", ciphersuite);
+        log::debug!("Skipping unsupported ciphersuite {ciphersuite:?}");
         return Ok(());
     }
-    log::debug!("Testing tv with ciphersuite {:?}", ciphersuite);
+    log::debug!("Testing tv with ciphersuite {ciphersuite:?}");
 
     let group_context = GroupContext::new(
         ciphersuite,
@@ -206,7 +206,11 @@ pub fn run_test_vector(
         );
         let bob_key_package = bob_key_package_bundle.key_package();
         let (_commit, _welcome, _) = group
-            .add_members(provider, &signature_keys, &[bob_key_package.clone()])
+            .add_members(
+                provider,
+                &signature_keys,
+                core::slice::from_ref(bob_key_package),
+            )
             .unwrap();
         group.merge_pending_commit(provider).unwrap();
 
@@ -368,7 +372,7 @@ pub fn run_test_vector(
                 .0;
             match processed_message.content().to_owned() {
                 FramedContentBody::Commit(c) => {
-                    assert_eq!(commit, CommitIn::from(c))
+                    assert_eq!(commit, CommitIn::from(*c))
                 }
                 _ => panic!("Wrong processed message content"),
             }
@@ -508,9 +512,11 @@ pub fn run_test_vector(
 }
 
 #[openmls_test::openmls_test]
-fn read_test_vectors_mp(provider: &impl crate::storage::OpenMlsProvider) {
+fn read_test_vectors_mp() {
     let _ = pretty_env_logger::try_init();
     log::debug!("Reading test vectors ...");
+
+    let provider = &Provider::default();
 
     let tests: Vec<MessageProtectionTest> =
         read_json!("../../../../test_vectors/message-protection.json");

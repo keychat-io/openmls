@@ -1,8 +1,7 @@
 //! # Key Packages
 //!
-//! Key packages are pre-published public keys that provide some information
-//! about a user in order to facilitate the asynchronous addition of clients to
-//! a group.
+//! Key packages are pre-published public keys that carry information about a
+//! user, allowing for the asynchronous addition of clients to an MLS group.
 //!
 //! A key package object specifies:
 //!
@@ -12,20 +11,19 @@
 //! - A list of **extensions** for the key package (see
 //!   [Extensions](`mod@crate::extensions`) for details)
 //!
-//! Key packages are intended to be used only once and SHOULD NOT be reused
-//! except in case of last resort, i.e. if there's no other key package
-//! available. Clients MAY generate and publish multiple KeyPackages to support
-//! multiple ciphersuites.
+//! Key packages are meant to be used only once and SHOULD NOT be reused,
+//! except as a last resort—i.e., when no other key package is available.
+//! Clients MAY generate and publish multiple key packages to support multiple
+//! ciphersuites.
 //!
-//! The value for HPKE init key MUST be a public key for the asymmetric
-//! encryption scheme defined by ciphersuite, and it MUST be unique among the
-//! set of key packages created by this client. The whole structure is signed
-//! using the client's signature key. A key package object with an invalid
-//! signature field is considered malformed.
+//! The HPKE init key MUST be a public key for the asymmetric encryption scheme
+//! defined by the ciphersuite. It MUST be unique among key packages created by
+//! the client. The entire structure is signed using the client's signature key.
+//! A key package object with an invalid signature field is considered malformed.
 //!
 //! ## Creating key package bundles
 //!
-//! Key package bundles are key packages including their private key. A key
+//! Key package bundles are key packages that include their private key. A key
 //! package bundle can be created as follows:
 //!
 //! ```
@@ -153,7 +151,7 @@ struct KeyPackageTbs {
     ciphersuite: Ciphersuite,
     init_key: InitKey,
     leaf_node: LeafNode,
-    extensions: Extensions,
+    extensions: Extensions<KeyPackage>,
 }
 
 impl Signable for KeyPackageTbs {
@@ -175,10 +173,26 @@ impl From<KeyPackage> for KeyPackageTbs {
 }
 
 /// The key package struct.
-#[derive(Debug, Clone, Serialize, Deserialize, TlsSize, TlsSerialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TlsSize)]
 pub struct KeyPackage {
     payload: KeyPackageTbs,
     signature: Signature,
+    #[serde(skip)]
+    #[tls_codec(skip)]
+    serialized_payload: Option<Vec<u8>>,
+}
+
+impl TlsSerializeTrait for KeyPackage {
+    fn tls_serialize<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, tls_codec::Error> {
+        let mut written = 0;
+        if let Some(ref bytes) = self.serialized_payload {
+            written += writer.write(bytes)?;
+        } else {
+            written += self.payload.tls_serialize(writer)?;
+        }
+        written += self.signature.tls_serialize(writer)?;
+        Ok(written)
+    }
 }
 
 impl PartialEq for KeyPackage {
@@ -190,8 +204,16 @@ impl PartialEq for KeyPackage {
 }
 
 impl SignedStruct<KeyPackageTbs> for KeyPackage {
-    fn from_payload(payload: KeyPackageTbs, signature: Signature) -> Self {
-        Self { payload, signature }
+    fn from_payload(
+        payload: KeyPackageTbs,
+        signature: Signature,
+        serialized_payload: Vec<u8>,
+    ) -> Self {
+        Self {
+            payload,
+            signature,
+            serialized_payload: Some(serialized_payload),
+        }
     }
 }
 
@@ -263,9 +285,9 @@ impl KeyPackage {
         signer: &impl Signer,
         credential_with_key: CredentialWithKey,
         lifetime: Lifetime,
-        extensions: Extensions,
+        extensions: Extensions<KeyPackage>,
         leaf_node_capabilities: Capabilities,
-        leaf_node_extensions: Extensions,
+        leaf_node_extensions: Extensions<LeafNode>,
     ) -> Result<KeyPackageCreationResult, KeyPackageNewError> {
         if ciphersuite.signature_algorithm() != signer.signature_scheme() {
             return Err(KeyPackageNewError::CiphersuiteSignatureSchemeMismatch);
@@ -315,9 +337,9 @@ impl KeyPackage {
         signer: &impl Signer,
         credential_with_key: CredentialWithKey,
         lifetime: Lifetime,
-        extensions: Extensions,
+        extensions: Extensions<KeyPackage>,
         capabilities: Capabilities,
-        leaf_node_extensions: Extensions,
+        leaf_node_extensions: Extensions<LeafNode>,
         init_key: InitKey,
     ) -> Result<(Self, EncryptionKeyPair), KeyPackageNewError> {
         // We don't need the private key here. It's stored in the key store for
@@ -349,7 +371,7 @@ impl KeyPackage {
     }
 
     /// Get a reference to the extensions of this key package.
-    pub fn extensions(&self) -> &Extensions {
+    pub fn extensions(&self) -> &Extensions<KeyPackage> {
         &self.payload.extensions
     }
 
@@ -423,9 +445,9 @@ impl KeyPackage {
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct KeyPackageBuilder {
     key_package_lifetime: Option<Lifetime>,
-    key_package_extensions: Option<Extensions>,
+    key_package_extensions: Option<Extensions<KeyPackage>>,
     leaf_node_capabilities: Option<Capabilities>,
-    leaf_node_extensions: Option<Extensions>,
+    leaf_node_extensions: Option<Extensions<LeafNode>>,
     last_resort: bool,
 }
 
@@ -448,7 +470,7 @@ impl KeyPackageBuilder {
     }
 
     /// Set the key package extensions.
-    pub fn key_package_extensions(mut self, extensions: Extensions) -> Self {
+    pub fn key_package_extensions(mut self, extensions: Extensions<KeyPackage>) -> Self {
         self.key_package_extensions.replace(extensions);
         self
     }
@@ -466,7 +488,9 @@ impl KeyPackageBuilder {
     }
 
     /// Set the leaf node extensions.
-    pub fn leaf_node_extensions(mut self, extensions: Extensions) -> Self {
+    ///
+    /// Returns an error if one or more of the extensions is invalid in leaf nodes.
+    pub fn leaf_node_extensions(mut self, extensions: Extensions<LeafNode>) -> Self {
         self.leaf_node_extensions.replace(extensions);
         self
     }
@@ -477,9 +501,14 @@ impl KeyPackageBuilder {
         if self.last_resort {
             let last_resort_extension = Extension::LastResort(LastResortExtension::default());
             if let Some(extensions) = self.key_package_extensions.as_mut() {
-                extensions.add_or_replace(last_resort_extension);
+                extensions
+                    .add_or_replace(last_resort_extension)
+                    .expect("LastResort extensions are allowed in key packages");
             } else {
-                self.key_package_extensions = Some(Extensions::single(last_resort_extension));
+                self.key_package_extensions = Some(
+                    Extensions::single(last_resort_extension)
+                        .expect("LastResort extensions are allowed in key packages"),
+                );
             }
         }
     }
@@ -514,6 +543,7 @@ impl KeyPackageBuilder {
         credential_with_key: CredentialWithKey,
     ) -> Result<KeyPackageBundle, KeyPackageNewError> {
         self.ensure_last_resort();
+
         let KeyPackageCreationResult {
             key_package,
             encryption_keypair,

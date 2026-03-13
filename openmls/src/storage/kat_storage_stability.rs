@@ -60,7 +60,7 @@ impl<Provider: OpenMlsProvider + Default> DeterministicRandProvider<Provider> {
     }
 
     fn block(&self, mut dst: &mut [u8]) -> usize {
-        let provider = Provider::default();
+        let provider = &Provider::default();
         let ctr = self.ctr.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let block = provider
@@ -253,7 +253,8 @@ fn helper_generate_kat<Provider: OpenMlsProvider + Default>(
             &alice_provider,
             Extensions::single(Extension::RequiredCapabilities(
                 RequiredCapabilitiesExtension::new(&[ExtensionType::Unknown(0xf042)], &[], &[]),
-            )),
+            ))
+            .unwrap(),
             &alice_signer,
         )
         .unwrap();
@@ -335,7 +336,7 @@ fn helper_generate_kat<Provider: OpenMlsProvider + Default>(
 }
 
 #[openmls_test]
-fn generate_kats(ciphersuite: Ciphersuite, provider: &Provider) {
+fn generate_kats() {
     helper_generate_kat::<Provider>(ciphersuite);
 }
 
@@ -433,7 +434,7 @@ fn helper_write_kats(kat_data: Vec<(Ciphersuite, GroupId, Vec<Vec<u8>>)>) {
 }
 
 #[openmls_test]
-fn test(ciphersuite: Ciphersuite, provider: &Provider) {
+fn test() {
     // setup
     let base64_engine = base64::engine::GeneralPurpose::new(
         &base64::alphabet::URL_SAFE,
@@ -619,9 +620,10 @@ fn test(ciphersuite: Ciphersuite, provider: &Provider) {
 
             assert_eq!(
                 gce_proposal.extensions(),
-                &Extensions::single(Extension::RequiredCapabilities(
+                &Extensions::<GroupContext>::single(Extension::RequiredCapabilities(
                     RequiredCapabilitiesExtension::new(&[ExtensionType::Unknown(0xf042)], &[], &[])
                 ))
+                .unwrap()
             );
         }
         None => panic!("expected a pending commit"),
@@ -704,7 +706,7 @@ fn test(ciphersuite: Ciphersuite, provider: &Provider) {
                 &BasicCredential::new(b"charlie".to_vec()).into()
             )
         }
-        other => panic!("expected add proposal, got {:?}", other),
+        other => panic!("expected add proposal, got {other:?}"),
     }
 
     // there is no pending commit

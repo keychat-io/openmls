@@ -72,11 +72,16 @@ pub enum ApplyUpdatePathError {
     /// External Committer used the wrong index.
     #[error("External Committer used the wrong index.")]
     InconsistentSenderIndex,
+    /// The own leaf is not in the tree.
+    #[error("The own leaf is not in the tree.")]
+    MissingOwnLeaf,
+    /// The ciphertext is missing in the update path node.
+    #[error("The ciphertext is missing in the update path node.")]
+    MissingCiphertext,
 }
 
 // === Crate errors ===
 
-// TODO: This will go away in #819 again.
 // `UnsupportedExtension` is only used in tests for now
 #[allow(dead_code)]
 /// TreeSync error
@@ -181,24 +186,6 @@ pub(crate) enum TreeSyncDiffError {
     /// See [`MlsBinaryTreeError`] for more details.
     #[error(transparent)]
     CreationError(#[from] MlsBinaryTreeError),
-}
-
-/// TreeKem error
-#[derive(Error, Debug, PartialEq, Clone)]
-#[allow(clippy::enum_variant_names)]
-pub(crate) enum TreeKemError {
-    /// See [`LibraryError`] for more details.
-    #[error(transparent)]
-    LibraryError(#[from] LibraryError),
-    /// See [`TreeSyncError`] for more details.
-    #[error(transparent)]
-    TreeSyncError(#[from] TreeSyncError),
-    /// See [`TreeSyncDiffError`] for more details.
-    #[error(transparent)]
-    TreeSyncDiffError(#[from] TreeSyncDiffError),
-    /// See [`PathSecretError`] for more details.
-    #[error(transparent)]
-    PathSecretError(#[from] PathSecretError),
 }
 
 /// Errors that can happen during leaf node validation.

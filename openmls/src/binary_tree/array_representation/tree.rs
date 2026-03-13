@@ -23,8 +23,25 @@ where
     L: Clone + Debug + Default,
     P: Clone + Debug + Default,
 {
-    Leaf(L),
-    Parent(P),
+    Leaf(Box<L>),
+    Parent(Box<P>),
+}
+
+#[cfg(test)]
+impl<L, P> TreeNode<L, P>
+where
+    L: Clone + Debug + Default,
+    P: Clone + Debug + Default,
+{
+    /// Create a new leaf.
+    pub(crate) fn leaf(l: L) -> Self {
+        Self::Leaf(Box::new(l))
+    }
+
+    /// Create a new parent.
+    pub(crate) fn parent(p: P) -> Self {
+        Self::Parent(Box::new(p))
+    }
 }
 
 #[cfg_attr(any(test, feature = "test-utils"), derive(PartialEq))]
@@ -63,14 +80,14 @@ impl<L: Clone + Debug + Default, P: Clone + Debug + Default> ABinaryTree<L, P> {
             match node {
                 TreeNode::Leaf(l) => {
                     if i % 2 == 0 {
-                        leaf_nodes.push(l)
+                        leaf_nodes.push(*l)
                     } else {
                         return Err(ABinaryTreeError::WrongNodeType);
                     }
                 }
                 TreeNode::Parent(p) => {
                     if i % 2 == 1 {
-                        parent_nodes.push(p)
+                        parent_nodes.push(*p)
                     } else {
                         return Err(ABinaryTreeError::WrongNodeType);
                     }
@@ -78,6 +95,36 @@ impl<L: Clone + Debug + Default, P: Clone + Debug + Default> ABinaryTree<L, P> {
             }
         }
 
+        Ok(ABinaryTree {
+            leaf_nodes,
+            parent_nodes,
+            default_leaf: L::default(),
+            default_parent: P::default(),
+        })
+    }
+
+    /// Create a tree directly from separate vectors of leaf and parent nodes,
+    /// avoiding the allocations required when using `TreeNode` enum variants.
+    ///
+    /// # Arguments
+    /// * `leaf_nodes` - Vector of leaf nodes
+    /// * `parent_nodes` - Vector of parent nodes
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// * The total number of nodes exceeds `MAX_TREE_SIZE`
+    /// * The vectors don't form a valid full, left-balanced binary tree
+    pub(crate) fn from_components(
+        leaf_nodes: Vec<L>,
+        parent_nodes: Vec<P>,
+    ) -> Result<Self, ABinaryTreeError> {
+        let total_nodes = leaf_nodes.len() + parent_nodes.len();
+        if total_nodes > MAX_TREE_SIZE as usize {
+            return Err(ABinaryTreeError::OutOfRange);
+        }
+        if leaf_nodes.len() != parent_nodes.len() + 1 {
+            return Err(ABinaryTreeError::InvalidNumberOfNodes);
+        }
         Ok(ABinaryTree {
             leaf_nodes,
             parent_nodes,

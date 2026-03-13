@@ -1,3 +1,5 @@
+use std::slice::from_ref;
+
 use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::{Deserialize, Serialize};
 
@@ -52,7 +54,8 @@ fn create_encoding_test_setup(provider: &impl crate::storage::OpenMlsProvider) -
 
 /// This test tests encoding and decoding of application messages.
 #[openmls_test::openmls_test]
-fn test_application_message_encoding(provider: &impl crate::storage::OpenMlsProvider) {
+fn test_application_message_encoding() {
+    let provider = &Provider::default();
     let test_setup = create_encoding_test_setup(provider);
     let test_clients = test_setup.clients.borrow();
     let alice = test_clients
@@ -93,7 +96,8 @@ fn test_application_message_encoding(provider: &impl crate::storage::OpenMlsProv
 
 /// This test tests encoding and decoding of update proposals.
 #[openmls_test::openmls_test]
-fn test_update_proposal_encoding(provider: &impl crate::storage::OpenMlsProvider) {
+fn test_update_proposal_encoding() {
+    let provider = &Provider::default();
     let test_setup = create_encoding_test_setup(provider);
     let test_clients = test_setup.clients.borrow();
     let alice = test_clients
@@ -133,7 +137,8 @@ fn test_update_proposal_encoding(provider: &impl crate::storage::OpenMlsProvider
 
 /// This test tests encoding and decoding of add proposals.
 #[openmls_test::openmls_test]
-fn test_add_proposal_encoding(provider: &impl crate::storage::OpenMlsProvider) {
+fn test_add_proposal_encoding() {
+    let provider = &Provider::default();
     let test_setup = create_encoding_test_setup(provider);
     let test_clients = test_setup.clients.borrow();
     let alice = test_clients
@@ -178,7 +183,8 @@ fn test_add_proposal_encoding(provider: &impl crate::storage::OpenMlsProvider) {
 
 /// This test tests encoding and decoding of remove proposals.
 #[openmls_test::openmls_test]
-fn test_remove_proposal_encoding(provider: &impl crate::storage::OpenMlsProvider) {
+fn test_remove_proposal_encoding() {
+    let provider = &Provider::default();
     let test_setup = create_encoding_test_setup(provider);
     let test_clients = test_setup.clients.borrow();
     let alice = test_clients
@@ -216,7 +222,8 @@ fn test_remove_proposal_encoding(provider: &impl crate::storage::OpenMlsProvider
 
 /// This test tests encoding and decoding of commit messages.
 #[openmls_test::openmls_test]
-fn test_commit_encoding(provider: &impl crate::storage::OpenMlsProvider) {
+fn test_commit_encoding() {
+    let provider = &Provider::default();
     let test_setup = create_encoding_test_setup(provider);
     let test_clients = test_setup.clients.borrow();
     let alice = test_clients
@@ -242,7 +249,7 @@ fn test_commit_encoding(provider: &impl crate::storage::OpenMlsProvider) {
             .add_members(
                 provider,
                 &alice_credential_with_key_and_signer.signer,
-                &[charlie_key_package.clone()],
+                from_ref(&charlie_key_package),
             )
             .expect("Could not create commit.");
 
@@ -262,7 +269,8 @@ fn test_commit_encoding(provider: &impl crate::storage::OpenMlsProvider) {
 }
 
 #[openmls_test::openmls_test]
-fn test_welcome_message_encoding(provider: &impl crate::storage::OpenMlsProvider) {
+fn test_welcome_message_encoding() {
+    let provider = &Provider::default();
     let test_setup = create_encoding_test_setup(provider);
     let test_clients = test_setup.clients.borrow();
     let alice = test_clients
@@ -290,7 +298,7 @@ fn test_welcome_message_encoding(provider: &impl crate::storage::OpenMlsProvider
             .add_members(
                 provider,
                 &credential_with_key_and_signer.signer,
-                &[charlie_key_package.clone()],
+                from_ref(&charlie_key_package),
             )
             .expect("Could not create commit.");
         group_state.merge_pending_commit(provider).unwrap();
@@ -310,11 +318,14 @@ fn test_welcome_message_encoding(provider: &impl crate::storage::OpenMlsProvider
         // This makes Charlie decode the internals of the Welcome message, for
         // example the RatchetTreeExtension.
         let config = MlsGroupJoinConfig::default();
-        let ratchet_tree = Some(group_state.export_ratchet_tree().into());
-        let charlie_group =
-            StagedWelcome::new_from_welcome(provider, &config, welcome, ratchet_tree)
-                .unwrap()
-                .into_group(provider);
+        let processed_welcome =
+            ProcessedWelcome::new_from_welcome(provider, &config, welcome.clone()).unwrap();
+        let charlie_group = JoinBuilder::new(provider, processed_welcome)
+            .replace_old_group()
+            .with_ratchet_tree(group_state.export_ratchet_tree().into())
+            .build()
+            .unwrap()
+            .into_group(provider);
         assert!(charlie_group.is_ok());
     }
 }

@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use crate::{
     binary_tree::LeafNodeIndex,
     error::LibraryError,
+    extensions::Extensions,
     framing::Sender,
     group::proposal_store::ProposalQueue,
     messages::proposals::{AddProposal, ExternalInitProposal, Proposal, ProposalType},
@@ -10,6 +11,12 @@ use crate::{
 };
 
 use super::*;
+
+#[cfg(feature = "extensions-draft-08")]
+use crate::{
+    extensions::{AppDataDictionaryExtension, Extension},
+    prelude::processing::AppDataUpdates,
+};
 
 /// This struct contain the return values of the `apply_proposals()` function
 #[derive(Debug)]
@@ -19,7 +26,7 @@ pub(crate) struct ApplyProposalsValues {
     pub(crate) invitation_list: Vec<(LeafNodeIndex, AddProposal)>,
     pub(crate) presharedkeys: Vec<PreSharedKeyId>,
     pub(crate) external_init_proposal_option: Option<ExternalInitProposal>,
-    pub(crate) extensions: Option<Extensions>,
+    pub(crate) extensions: Option<Extensions<GroupContext>>,
 }
 
 impl ApplyProposalsValues {
@@ -67,7 +74,7 @@ impl PublicGroupDiff<'_> {
             .next()
             .and_then(|queued_proposal| {
                 if let Proposal::ExternalInit(external_init_proposal) = queued_proposal.proposal() {
-                    Some(external_init_proposal.clone())
+                    Some(*(*external_init_proposal).clone())
                 } else {
                     None
                 }
@@ -141,10 +148,11 @@ impl PublicGroupDiff<'_> {
             let leaf_index = self
                 .diff
                 .add_leaf(leaf_node.clone())
-                // TODO #810
                 .map_err(|_| LibraryError::custom("Tree full: cannot add more members"))?;
-            invitation_list.push((leaf_index, add_proposal.clone()))
+            invitation_list.push((leaf_index, *(*add_proposal).clone()))
         }
+
+        self.diff.trim_tree();
 
         // Process PSK proposals
         let presharedkeys: Vec<PreSharedKeyId> = proposal_queue
@@ -158,8 +166,10 @@ impl PublicGroupDiff<'_> {
             })
             .collect();
 
-        // apply group context extension proposal
-        let extensions = proposal_queue
+        // new extensions from group context extension proposal
+        // can be followed by AppDataUpdate proposals that modify
+        // the AppDataDictionary in the extensions
+        let updated_group_context_extensions = proposal_queue
             .filtered_by_type(ProposalType::GroupContextExtensions)
             .find_map(|queued_proposal| match queued_proposal.proposal() {
                 Proposal::GroupContextExtensions(extensions) => {
@@ -173,13 +183,48 @@ impl PublicGroupDiff<'_> {
             .any(|p| p.proposal().is_path_required());
 
         // This flag determines if the commit requires a path. A path is required if:
-        // * none of the proposals require a path
-        // * (or) it is an external commit
+        // * at least one proposal requires a path
         // * (or) the commit is empty which implicitly means it's a self-update
-        let path_required = proposals_require_path
-            // The fact that this is some implies that there's an external init proposal.
-            || external_init_proposal_option.is_some()
-            || proposal_queue.is_empty();
+        // * (or) it is an external commit
+        // External commits always have an ExternalInit proposal, which requires a path. Therefore the last check is redundant.
+        let path_required = proposals_require_path || proposal_queue.is_empty();
+
+        Ok(ApplyProposalsValues {
+            path_required,
+            self_removed,
+            invitation_list,
+            presharedkeys,
+            external_init_proposal_option,
+            extensions: updated_group_context_extensions,
+        })
+    }
+
+    #[cfg(feature = "extensions-draft-08")]
+    pub(crate) fn apply_proposals_with_app_data_updates(
+        &mut self,
+        proposal_queue: &ProposalQueue,
+        own_leaf_index: impl Into<Option<LeafNodeIndex>>,
+        app_data_dict_updates: Option<AppDataUpdates>,
+    ) -> Result<ApplyProposalsValues, ApplyAppDataUpdateError> {
+        let ApplyProposalsValues {
+            path_required,
+            self_removed,
+            invitation_list,
+            presharedkeys,
+            external_init_proposal_option,
+            extensions,
+        } = self.apply_proposals(proposal_queue, own_leaf_index)?;
+
+        // apply AppDataUpdate proposals to the already-updated GroupContext extensions,
+        // if available, or return the new GroupContext extensions if modified.
+        #[cfg(feature = "extensions-draft-08")]
+        let mut extensions = extensions;
+        #[cfg(feature = "extensions-draft-08")]
+        self.apply_app_data_update_proposals(
+            &mut extensions,
+            proposal_queue,
+            app_data_dict_updates,
+        )?;
 
         Ok(ApplyProposalsValues {
             path_required,
@@ -189,5 +234,66 @@ impl PublicGroupDiff<'_> {
             external_init_proposal_option,
             extensions,
         })
+    }
+
+    /// Return the updated GroupContext extensions after applying AppDataUpdates.
+    #[cfg(feature = "extensions-draft-08")]
+    pub(crate) fn apply_app_data_update_proposals(
+        &self,
+        // group_context_extensions if updated by a GroupContextExtensions proposal
+        updated_group_context_extensions: &mut Option<Extensions<GroupContext>>,
+        proposal_queue: &ProposalQueue,
+        app_data_dict_updates: Option<AppDataUpdates>,
+    ) -> Result<(), ApplyAppDataUpdateError> {
+        let has_app_data_update_proposals = proposal_queue
+            .queued_proposals()
+            .any(|proposal| proposal.proposal().is_type(ProposalType::AppDataUpdate));
+
+        let updates = match (has_app_data_update_proposals, app_data_dict_updates) {
+            // there are AppDataUpdate proposals and we were provided the AooDataUpdates
+            (true, Some(updates)) => updates,
+            // there are no AppDataUpdate proposals in the queue, and we weren't provided any updates
+            (false, None) => return Ok(()),
+
+            // If there are app data update proposals, there must be a list
+            (true, None) => {
+                return Err(ApplyAppDataUpdateError::MissingAppDataUpdates);
+            }
+            // updates were provided, but no proposals could have triggered the update
+            (false, Some(_)) => {
+                return Err(ApplyAppDataUpdateError::SuperfluousAppDataUpdates);
+            }
+        };
+
+        // retrieve the AppDataDictionary to update
+        // (make a copy of the AppDataDictionary, or create a new dictionary).
+        // NOTE: the case where a GroupContextExtensions updates the RequiredCapabilities
+        // to no longer include AppDataUpdate should be already filtered out at this stage.
+        let mut dictionary = self
+            .group_context
+            .app_data_dict()
+            .cloned()
+            .unwrap_or_default();
+
+        // apply updates
+        for (id, data) in updates.into_iter() {
+            if let Some(data) = data {
+                let _ = dictionary.insert(id, data);
+            } else {
+                let _ = dictionary.remove(&id);
+            }
+        }
+
+        // update the new dictionary in the updated extensions if updated by a
+        // GroupContextExtensions proposal, or make a copy of the existing extensions.
+        let extensions_to_update = updated_group_context_extensions
+            .get_or_insert_with(|| self.group_context.extensions().clone());
+
+        // update the dictionary extension
+        extensions_to_update.add_or_replace(Extension::AppDataDictionary(
+            AppDataDictionaryExtension::new(dictionary),
+        ));
+
+        Ok(())
     }
 }
